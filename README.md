@@ -4,7 +4,7 @@ CHT - Compact heterogeneous tree - A compact human readable text format for repr
 Most mainstream formats are designed to represent homogenous data. Trying to represent a tree with heterougeneous nodes (for example an abstract syntax tree) using JSON or even NestedText is extremely verbose. In JSON and similar, the emphasis is on the description of each field of an object rather than the describing the object as a whole. Modeling a heterogeneous structure requires an auxiliary field which does not actually hold data, but rather serves as a discriminator. In CHT, the focus is instead on the type of each node/object. On the other hand the fields are not mentioned at all - instead the encoded values are mapped based on their order and the type of the node.
 
 ## What is this for
-The main motivation / primary usecase is unit testing data serialization and pretty printing while debugging different trees that comeup when writing a language. However the format is rather abstract and I imagine it could be used anywhere JSON is used.
+The main motivation / primary usecase is data serialization of data for data driven unit testing and pretty printing while debugging different trees that comeup when implementing a language. However the format is rather abstract and I imagine it could be used anywhere JSON is used.
 
 ## Example
 
@@ -82,7 +82,7 @@ There are three kinds of nodes:
 
 1. Quoted terminal node - a leaf node. This node is defined by its value - which may be any piece of text piece of text. This is often directly mapped to a string datatype, but this is up to the application.
 2. Raw terminal node - a different kind of leaf node. Raw terminal's value is slightly restricted piece of text. Often used to represent terminals like numbers, `true`, `false`, `null`.
-3. Nonterminal node - a node which may have children. Such node is entirely defined by its type (capital letter followed by any number of letters) and a sequence (potentially empty) of its children.
+3. Nonterminal node - a node which may have children. Such node is entirely defined by its type (capital letter followed by any number of nonspecial characters) and a sequence (potentially empty) of its children.
 
 
 ### Syntax
@@ -116,7 +116,7 @@ A type of the node followed by a colon `:` and a non-newline whitespace separate
 For example:
 
 ```
-RestOfLineNonterminal: "its first child" "its second child"
+RestOfLineNonterminal<T>: "its first child" "its second child"
 ```
 
 
@@ -126,7 +126,7 @@ A type of the node followed by a left paren `(`a non-newline whitespace separate
 For example:
 
 ```
-FunctionNonterminal("its first child" "its second child")
+FunctionNonterminal<T>("its first child" "its second child")
 ```
 
 Note that this syntax cannot span multiple lines.
@@ -137,7 +137,7 @@ A type of the node followed by a colon `:` a newline an indentation increase and
 For example:
 
 ```
-BlockNonterminal:
+BlockNonterminal<T>:
     "its first child"
     "its second child"
 ```
