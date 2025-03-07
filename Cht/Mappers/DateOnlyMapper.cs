@@ -14,7 +14,7 @@ public class DateOnlyMapper : ChtMapper<DateOnly>
 
     public override bool ToNode(DateOnly value, ChtSerializer serializer, out ChtNode output)
     {
-        output = new ChtTerminal { Raw = value.ToString("yyyy-MM-dd") };
+        output = ChtTerminal.JustRaw(value.ToString("yyyy-MM-dd"));
         return true;
     }
 }

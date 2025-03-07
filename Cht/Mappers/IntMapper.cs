@@ -14,7 +14,7 @@ public class IntMapper : ChtMapper<int>
 
     public override bool ToNode(int value, ChtSerializer serializer, out ChtNode output)
     {
-        output = new ChtTerminal { Raw = value.ToString() };
+        output = ChtTerminal.JustRaw(value.ToString());
         return true;
     }
 }

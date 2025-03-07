@@ -15,7 +15,7 @@ public class BoolMapper : ChtMapper<bool>
 
     public override bool ToNode(bool value, ChtSerializer serializer, out ChtNode output)
     {
-        output = new ChtTerminal { Raw = value.ToString().ToLower() };
+        output = ChtTerminal.JustRaw(value.ToString().ToLower());
         return true;
     }
 }

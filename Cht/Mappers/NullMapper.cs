@@ -18,7 +18,7 @@ public class NullMapper : IChtMapper
         output = default;
         if (value is null)
         {
-            output = new ChtTerminal { Raw = "null" };
+            output = ChtTerminal.JustRaw("null");
             return true;
         }
         return false;

@@ -24,7 +24,7 @@ public class EnumMapper : IChtMapper
                     return true;
                 }
             }
-            throw new Exception("Invalid enum node.");
+            throw new ArgumentException("Invalid enum node.");
         }
         output = default;
         return false;
@@ -36,11 +36,10 @@ public class EnumMapper : IChtMapper
         {
             var type = value.GetType();
             var valueName = Enum.GetName(type, enumValue);
-            output = new ChtNonterminal
-            {
-                Type = type.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? type.Name,
-                Children = { new ChtTerminal { Raw = char.ToLower(valueName[0]) + valueName[1..] } }
-            };
+            output = new ChtNonterminal(            
+                type.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? type.Name,
+                ChtTerminal.JustRaw(char.ToLower(valueName[0]) + valueName[1..])
+            );
             return true;
         }
         output = default;

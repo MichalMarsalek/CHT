@@ -14,7 +14,7 @@ public class TimeOnlyMapper : ChtMapper<TimeOnly>
 
     public override bool ToNode(TimeOnly value, ChtSerializer serializer, out ChtNode output)
     {
-        output = new ChtTerminal { Raw = value.ToString("HH:mm:ss") };
+        output = ChtTerminal.JustRaw(value.ToString("HH:mm:ss"));
         return true;
     }
 }

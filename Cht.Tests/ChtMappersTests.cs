@@ -33,30 +33,27 @@ public class ChtMappersTests
     public async Task BoolMapper_DefinesInverseFunctions()
     {
         var mapper = new BoolMapper();
-        await Mapper_DefinesInverseFunctions(mapper, true, new ChtTerminal { Raw = "true" });
-        await Mapper_DefinesInverseFunctions(mapper, false, new ChtTerminal { Raw = "false" });
+        await Mapper_DefinesInverseFunctions(mapper, true, ChtTerminal.JustRaw("true"));
+        await Mapper_DefinesInverseFunctions(mapper, false, ChtTerminal.JustRaw("false"));
     }
 
     [Test]
     public async Task DateOnlyMapper_DefinesInverseFunctions()
     {
         var mapper = new DateOnlyMapper();
-        await Mapper_DefinesInverseFunctions(mapper, new DateOnly(2000, 1, 1), new ChtTerminal { Raw = "2000-01-01" });
-        await Mapper_DefinesInverseFunctions(mapper, new DateOnly(2025, 11, 15), new ChtTerminal { Raw = "2025-11-15" });
+        await Mapper_DefinesInverseFunctions(mapper, new DateOnly(2000, 1, 1), ChtTerminal.JustRaw("2000-01-01"));
+        await Mapper_DefinesInverseFunctions(mapper, new DateOnly(2025, 11, 15), ChtTerminal.JustRaw("2025-11-15"));
     }
 
     [Test]
     public async Task IDictionaryMapper_DefinesInverseFunctions()
     {
         var mapper = new IDictionaryMapper();
-        await Mapper_DefinesInverseFunctions(mapper, new Dictionary<int, int> { [5] = 2, [3] = 4 }, new ChtNonterminal
-        {
-            Type = "Dictionary",
-            Children = [
-                new ChtNonterminal { Type = "KeyValue", Children = [new ChtTerminal { Raw = "5" }, new ChtTerminal { Raw = "2" }] },
-                new ChtNonterminal { Type = "KeyValue", Children = [new ChtTerminal { Raw = "3" }, new ChtTerminal { Raw = "4" }] }
-            ]
-        },
+        await Mapper_DefinesInverseFunctions(mapper, new Dictionary<int, int> { [5] = 2, [3] = 4 }, new ChtNonterminal(
+            "Dictionary",
+            new ChtNonterminal("KeyValue", ChtTerminal.JustRaw("5"), ChtTerminal.JustRaw("2")),
+            new ChtNonterminal("KeyValue", ChtTerminal.JustRaw("3"), ChtTerminal.JustRaw("4"))
+        ),
         new ChtSerializer().AddIntMapper());
     }
 
@@ -64,11 +61,10 @@ public class ChtMappersTests
     public async Task IEnumerableMapper_DefinesInverseFunctions()
     {
         var mapper = new IEnumerableMapper();
-        await Mapper_DefinesInverseFunctions(mapper, new List<int> { 2, 4 }, new ChtNonterminal
-        {
-            Type = "List",
-            Children = [ new ChtTerminal { Raw = "2"}, new ChtTerminal { Raw = "4" }]
-        },
+        await Mapper_DefinesInverseFunctions(mapper, new List<int> { 2, 4 }, new ChtNonterminal(
+            "List",
+            new ChtTerminal { Raw = "2"}, ChtTerminal.JustRaw("4")
+        ),
         new ChtSerializer().AddIntMapper());
     }
 
@@ -76,31 +72,31 @@ public class ChtMappersTests
     public async Task IntMapper_DefinesInverseFunctions()
     {
         var mapper = new IntMapper();
-        await Mapper_DefinesInverseFunctions(mapper, 4, new ChtTerminal { Raw = "4" });
-        await Mapper_DefinesInverseFunctions(mapper, -58, new ChtTerminal { Raw = "-58" });
+        await Mapper_DefinesInverseFunctions(mapper, 4, ChtTerminal.JustRaw("4"));
+        await Mapper_DefinesInverseFunctions(mapper, -58, ChtTerminal.JustRaw("-58"));
     }
 
     [Test]
     public async Task NullMapper_DefinesInverseFunctions()
     {
         var mapper = new NullMapper();
-        await Mapper_DefinesInverseFunctions(mapper, null, new ChtTerminal { Raw = "null" });
+        await Mapper_DefinesInverseFunctions(mapper, null, ChtTerminal.JustRaw("null"));
     }
 
     [Test]
     public async Task StringMapper_DefinesInverseFunctions()
     {
         var mapper = new StringMapper();
-        await Mapper_DefinesInverseFunctions(mapper, "abc", new ChtTerminal { Quoted = "abc" });
-        await Mapper_DefinesInverseFunctions(mapper, "X Y Z", new ChtTerminal { Quoted = "X Y Z" });
+        await Mapper_DefinesInverseFunctions(mapper, "abc", ChtTerminal.JustQuoted("abc"));
+        await Mapper_DefinesInverseFunctions(mapper, "X Y Z", ChtTerminal.JustQuoted("X Y Z"));
     }
 
     [Test]
     public async Task TimeOnlyMapper_DefinesInverseFunctions()
     {
         var mapper = new TimeOnlyMapper();
-        await Mapper_DefinesInverseFunctions(mapper, new TimeOnly(9, 30, 0), new ChtTerminal { Raw = "09:30:00" });
-        await Mapper_DefinesInverseFunctions(mapper, new TimeOnly(18, 11, 15), new ChtTerminal { Raw = "18:11:15" });
+        await Mapper_DefinesInverseFunctions(mapper, new TimeOnly(9, 30, 0), ChtTerminal.JustRaw("09:30:00"));
+        await Mapper_DefinesInverseFunctions(mapper, new TimeOnly(18, 11, 15), ChtTerminal.JustRaw("18:11:15"));
     }
 
     [Test]
@@ -108,20 +104,14 @@ public class ChtMappersTests
     {
         var mapper = new GuidMapper();
         var guid = Guid.NewGuid();
-        await Mapper_DefinesInverseFunctions(mapper, guid, new ChtTerminal { Raw = guid.ToString() });
+        await Mapper_DefinesInverseFunctions(mapper, guid, ChtTerminal.JustRaw(guid.ToString()));
     }
 
     [Test]
     public async Task EnumMapper_DefinesInverseFunctions()
     {
         var mapper = new EnumMapper([typeof(TestEnum)]);
-        await Mapper_DefinesInverseFunctions(mapper, TestEnum.Variant1, new ChtNonterminal
-        {
-            Type = "Enum",
-            Children = [
-                new ChtTerminal { Raw = "variant1" }
-            ]
-        });
+        await Mapper_DefinesInverseFunctions(mapper, TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("variant1")));
     }
 
     private async Task Mapper_DefinesInverseFunctions(IChtMapper mapper, object? value, ChtNode node, ChtSerializer? serializer = null)

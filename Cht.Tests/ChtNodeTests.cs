@@ -7,7 +7,7 @@ public class ChtNodeTests
     [MethodDataSource(nameof(ChtRawTerminal_WithInvalidValue_Throws_Data))]
     public async Task ChtRawTerminal_WithInvalidValue_Throws(string value)
     {
-        await Assert.That(() => new ChtTerminal { Raw = value }).Throws<Exception>();
+        await Assert.That(() => ChtTerminal.JustRaw(value)).Throws<Exception>();
     }
 
     public static IEnumerable<string> ChtRawTerminal_WithInvalidValue_Throws_Data() => [
@@ -23,7 +23,7 @@ public class ChtNodeTests
     [MethodDataSource(nameof(ChtNonterminal_WithInvalidType_Throws_Data))]
     public async Task ChtNonterminal_WithInvalidType_Throws(string value)
     {
-        await Assert.That(() => new ChtNonterminal { Type = value }).Throws<Exception>();
+        await Assert.That(() => new ChtNonterminal(value)).Throws<Exception>();
     }
 
     public static IEnumerable<string> ChtNonterminal_WithInvalidType_Throws_Data() => [

@@ -21,11 +21,7 @@ public class IEnumerableMapper : ChtMapper<IEnumerable>
             output = default;
             return false;
         }
-        output = new ChtNonterminal
-        {
-            Type = "List",
-            Children = value.Cast<object>().Select(serializer.ToNode).ToList()
-        };
+        output = new ChtNonterminal("List", value.Cast<object>().Select(serializer.ToNode));
         return true;
     }
 }

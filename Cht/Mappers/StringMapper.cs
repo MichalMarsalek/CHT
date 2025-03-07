@@ -15,7 +15,7 @@ public class StringMapper : ChtMapper<string>
 
     public override bool ToNode(string value, ChtSerializer serializer, out ChtNode output)
     {
-        output = new ChtTerminal { Quoted = value };
+        output = ChtTerminal.JustQuoted(value);
         return true;
     }
 }

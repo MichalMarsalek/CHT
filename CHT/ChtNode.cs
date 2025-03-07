@@ -10,12 +10,24 @@ public abstract class ChtNode
 
 public class ChtNonterminal : ChtNode
 {
-    private string _type;
-    public required string Type {
+    private string _type = "";
+    public string Type {
         get => _type;
-        set => _type = Regex.IsMatch(value, @"^[A-Z][^\s"":\(\)]*$") ? value : throw new Exception($"Invalid nonterminal type: {value}");
+        set => _type = Regex.IsMatch(value, @"^[A-Z][^\s"":\(\)]*$") ? value : throw new ChtException($"Invalid nonterminal type: {value}");
     }
     public List<ChtNode> Children { get; set; } = [];
+
+    public ChtNonterminal(string type, params ChtNode[] children)
+    {
+        Type = type;
+        Children = children.ToList();
+    }
+
+    public ChtNonterminal(string type,IEnumerable<ChtNode> children)
+    {
+        Type = type;
+        Children = children.ToList();
+    }
 }
 
 public class ChtTerminal : ChtNode
@@ -25,7 +37,7 @@ public class ChtTerminal : ChtNode
     {
         get => _raw;
         set => _raw = value is null || Regex.IsMatch(value, @"^[^A-Z]((\d:\d)|[^\s"":\(\)])*$") ? value
-            : throw new Exception($"Invalid raw terminal value: {value}");
+            : throw new ChtException($"Invalid raw terminal value: {value}");
     }
 
     public virtual string? Quoted { get; set; }
@@ -35,6 +47,9 @@ public class ChtTerminal : ChtNode
 
     [MemberNotNullWhen(true, nameof(Quoted))]
     public bool IsJustQuoted => Raw is null && Quoted is not null;
+
+    public static ChtTerminal JustQuoted(string value) => new ChtTerminal { Quoted = value };
+    public static ChtTerminal JustRaw(string value) => new ChtTerminal { Raw = value };
 
     public override string ToString()
     {

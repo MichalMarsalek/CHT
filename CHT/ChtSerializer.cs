@@ -26,23 +26,37 @@ public class ChtSerializer
     {
         foreach (var mapper in Mappers.Reverse())
         {
-            if (mapper.ToNode(value, this, out var output))
+            try
             {
-                return output;
+                if (mapper.ToNode(value, this, out var output))
+                {
+                    return output;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ChtMappingException(mapper, ex);
             }
         }
-        throw new Exception($"No mapper able to handle value of type {typeof(T).Name}.");
+        throw new ChtMappingException(null, $"No mapper able to handle value of type {typeof(T).Name}.");
     }
     public T FromNode<T>(ChtNode node)
     {
         foreach (var mapper in Mappers.Reverse())
         {
-            if (mapper.FromNode(node, this, out var output) && (output is T || output is null))
+            try
             {
-                return (T)output!;
+                if (mapper.FromNode(node, this, out var output) && (output is T || output is null))
+                {
+                    return (T)output!;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ChtMappingException(mapper, ex);
             }
         }
-        throw new Exception($"No mapper able to handle node {(node is ChtTerminal terminal ? terminal.ToString() : node is ChtNonterminal nonterminal ? nonterminal.Type + "(...)" : '?')}");
+        throw new ChtMappingException(null, $"No mapper able to handle node {(node is ChtTerminal terminal ? terminal.ToString() : node is ChtNonterminal nonterminal ? nonterminal.Type + "(...)" : '?')}");
     }
 
     public string Serialize<T>(T value)
@@ -55,10 +69,8 @@ public class ChtSerializer
         return FromNode<T>(Parse(value));
     }
 
-    public ChtNode Parse(string value)
-    {
-        throw new NotImplementedException();
-    }
+    public ChtNode Parse(string source)
+        => ChtParser.Parse(source);
 
     public string Emit(ChtNode node)
     {
@@ -131,7 +143,7 @@ public class ChtSerializer
                     builder.Append(terminal.ToString());
                     break;
                 default:
-                    throw new Exception($"Unknown node type {node.GetType().Name}.");
+                    throw new ArgumentException($"Unknown node type {node.GetType().Name}.");
             }
         }
         Append(node, 0, 0);

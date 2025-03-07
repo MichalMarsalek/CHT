@@ -16,7 +16,7 @@ public class IDictionaryMapper : ChtMapper<IDictionary>
                 );
                 return true;
             }
-            throw new Exception("Dictionary node must contain only pairs.");
+            throw new ArgumentException("Dictionary node must contain only pairs.");
         }
         return false;
     }
@@ -28,15 +28,13 @@ public class IDictionaryMapper : ChtMapper<IDictionary>
             output = default;
             return false;
         }
-        output = new ChtNonterminal
-        {
-            Type = "Dictionary",
-            Children = value.Keys.Cast<object>().Select(key => new ChtNonterminal
-            {
-                Type = "KeyValue",
-                Children = [serializer.ToNode(key), serializer.ToNode(value[key])]
-            }).ToList<ChtNode>()
-        };
+        output = new ChtNonterminal(
+            "Dictionary",
+            value.Keys.Cast<object>().Select(key => new ChtNonterminal(
+                "KeyValue",
+                serializer.ToNode(key), serializer.ToNode(value[key])
+            ))
+        );
         return true;
     }
 }

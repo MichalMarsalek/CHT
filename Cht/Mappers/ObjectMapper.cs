@@ -32,10 +32,9 @@ public class ObjectMapper : IChtMapper
             return false;
         }
         var type = value.GetType();
-        output = new ChtNonterminal
-        {
-            Type = type.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? type.Name,
-            Children = value.GetType().GetProperties().Where(x => x.CanRead)
+        output = new ChtNonterminal(
+            type.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? type.Name,
+            value.GetType().GetProperties().Where(x => x.CanRead)
                 .Where(prop => prop.GetCustomAttribute<ChtIgnoreAttribute>() is null)
                 .SelectMany(prop =>
                 {
@@ -45,8 +44,8 @@ public class ObjectMapper : IChtMapper
                         return nonterminal.Children;
                     }
                     return Enumerable.Repeat(child, 1);
-                }).ToList()
-        };
+                })
+        );
         return true;
     }
 
