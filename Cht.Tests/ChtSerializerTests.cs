@@ -41,7 +41,7 @@ public class ChtSerializerTests
             new ChtNonterminal(
                 "Assignment",
                 ChtTerminal.JustRaw("$text"),
-                new ChtTerminal { Quoted = "Some text with spaces" }
+                ChtTerminal.JustQuoted("Some text with spaces")
             )
         );
 
