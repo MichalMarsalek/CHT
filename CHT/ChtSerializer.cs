@@ -60,14 +60,10 @@ public class ChtSerializer
     }
 
     public string Serialize<T>(T value)
-    {
-        return Emit(ToNode(value));
-    }
+        => Emit(ToNode(value));
 
     public T Deserialize<T>(string value)
-    {
-        return FromNode<T>(Parse(value));
-    }
+        => FromNode<T>(Parse(value));
 
     public ChtNode Parse(string source)
         => ChtParser.Parse(source);

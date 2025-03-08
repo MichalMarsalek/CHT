@@ -4,8 +4,6 @@ namespace Cht;
 
 internal static class ChtParser
 {
-    private const string _specialChars = "():\"";
-
     public static ChtNode Parse(string source)
         => Parse(NestLines(GetLines(source)));
 
@@ -55,6 +53,9 @@ internal static class ChtParser
 
         char PeekChar() => line.Content[pointer];
 
+        bool IsSpecial(char c)
+            => char.IsWhiteSpace(c) || c == ':' || c == '(' || c == ')' || c == '"';
+
         void Throw(string message)
             => throw new ChtParsingException(line.LineIndex + 1, line.Indentation.Length + pointer + 1, message);
 
@@ -67,7 +68,7 @@ internal static class ChtParser
             if (char.IsUpper(line.Content[pointer]))
             {
                 pointer++;
-                while (!char.IsWhiteSpace(PeekChar()) && !_specialChars.Contains(PeekChar())) pointer++;
+                while (!IsSpecial(PeekChar())) pointer++;
                 var type = line.Content[nodeStart..pointer];
 
                 if (PeekChar() == ':')
@@ -92,12 +93,11 @@ internal static class ChtParser
             }
 
             while (
-              !char.IsWhiteSpace(PeekChar()) &&
-              (!_specialChars.Contains(PeekChar()) ||
+              !IsSpecial(PeekChar()) ||
                 (PeekChar() == ':' &&
                   pointer > 0 &&
                   char.IsDigit(line.Content[pointer - 1]) &&
-                  char.IsDigit(line.Content[pointer + 1])))
+                  char.IsDigit(line.Content[pointer + 1]))
             ) pointer++;
             var rawEnd = pointer;
 
@@ -153,7 +153,7 @@ internal static class ChtParser
             {
                 if (last.Parent is null)
                 {
-                    throw new ChtParsingException(line.LineIndex + 1, 0, $"There may only be a single root node.");
+                    throw new ChtParsingException(line.LineIndex + 1, 1, $"There may only be a single root node.");
                 }
                 line.Parent = last.Parent;
                 last.Parent.Children.Add(line);
@@ -168,7 +168,7 @@ internal static class ChtParser
             }
             else
             {
-                throw new ChtParsingException(line.LineIndex + 1, 0, $"Invalid indentation.");
+                throw new ChtParsingException(line.LineIndex + 1, 1, $"Invalid indentation.");
             }
         }
 
