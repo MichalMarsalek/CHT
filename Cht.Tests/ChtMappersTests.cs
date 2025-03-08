@@ -39,6 +39,29 @@ public class ChtMappersTests
     }
 
     [Test]
+    public async Task ObjectMapper_WithGenericsAndInheritance_DefinesInverseFunctions()
+    {
+        var data1 = new TestGenericObject<string> { Value = "Test" };
+        var data2 = new TestInheritedObject { Value = "Test" };
+        var node1 = new ChtNonterminal("TestGenericObject", ChtTerminal.JustQuoted("Test"));
+        var node2 = new ChtNonterminal("TestInheritedObject", ChtTerminal.JustQuoted("Test"));
+
+        var serializer = new ChtSerializer().AddObjectMapper([typeof(TestBaseObject), typeof(TestGenericObject<>), typeof(TestInheritedObject)]).AddStringMapper();
+
+        await Assert.That(serializer.ToNode(data1)).IsEquivalentTo(node1);
+        await Assert.That(serializer.FromNode<object>(node1)).IsEquivalentTo(data1);
+        await Assert.That(serializer.FromNode<TestBaseObject>(node1)).IsEquivalentTo(data1);
+        await Assert.That(serializer.FromNode<TestGenericObject<string>>(node1)).IsEquivalentTo(data1);
+
+
+        await Assert.That(serializer.ToNode(data2)).IsEquivalentTo(node2);
+        await Assert.That(serializer.FromNode<object>(node2)).IsEquivalentTo(data2);
+        await Assert.That(serializer.FromNode<TestBaseObject>(node2)).IsEquivalentTo(data2);
+        await Assert.That(serializer.FromNode<TestGenericObject<string>>(node2)).IsEquivalentTo(data2);
+        await Assert.That(serializer.FromNode<TestInheritedObject>(node2)).IsEquivalentTo(data2);
+    }
+
+    [Test]
     public async Task IDictionaryMapper_WhenInsideObject_DefinesInverseFunctions()
     {
         var serializer = new ChtSerializer().AddObjectMapper([typeof(TestObjectWithDictionary)]).AddIDictionaryMapper().AddStringMapper();
@@ -183,11 +206,24 @@ public class ChtMappersTests
         Variant2
     }
 
-    public class  TestObjectWithDictionary
+    public class TestObjectWithDictionary
     {
         public string Name { get; set; } = "";
 
         [ChtFlatten]
         public Dictionary<string, string> Values { get; set; } = new();
+    }
+
+    public class TestBaseObject
+    {
+    }
+
+    public class TestGenericObject<T> : TestBaseObject
+    {
+        public T Value { get; set; }
+    }
+
+    public class TestInheritedObject : TestGenericObject<string>
+    {
     }
 }

@@ -15,20 +15,28 @@ public class EnumMapper : IChtMapper
 
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
-        if (node is ChtNonterminal nonterminal && _typeMap.TryGetValue(nonterminal.Type, out Type type) && type.IsAssignableTo(targetType))
+        if (node is ChtNonterminal nonterminal)
         {
-            if (nonterminal.Children.Count == 1 && nonterminal.Children[0] is ChtTerminal valueNode && valueNode.IsJustRaw)
+            var type = Unify(targetType, nonterminal.Type);
+            if (type is not null)
             {
-                if (Enum.TryParse(type, char.ToUpper(valueNode.Raw[0]) + valueNode.Raw[1..], out output))
+
+                if (nonterminal.Children.Count == 1 && nonterminal.Children[0] is ChtTerminal valueNode && valueNode.IsJustRaw)
                 {
-                    return true;
+                    if (Enum.TryParse(type, char.ToUpper(valueNode.Raw[0]) + valueNode.Raw[1..], out output))
+                    {
+                        return true;
+                    }
                 }
+                throw new ArgumentException("Invalid enum node.");
             }
-            throw new ArgumentException("Invalid enum node.");
         }
         output = default;
         return false;
     }
+
+    private Type? Unify(Type targetType, string nodeType)
+        => _typeMap.TryGetValue(nodeType, out Type type) && type.IsAssignableTo(targetType) ? type : null;
 
     public bool ToNode(object? value, ChtSerializer serializer, out ChtNode output)
     {

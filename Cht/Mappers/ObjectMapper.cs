@@ -10,15 +10,19 @@ public class ObjectMapper : IChtMapper
     {
         _typeMap = types
             .Where(x => !x.IsEnum)
-            .ToDictionary(x => x.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? x.Name, x => x);
+            .ToDictionary(GetTypeName, x => x);
     }
 
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
-        if (node is ChtNonterminal nonterminal && _typeMap.TryGetValue(nonterminal.Type, out Type type) && type.IsAssignableTo(targetType))
+        if (node is ChtNonterminal nonterminal)
         {
-            output = FromNode(nonterminal, type, serializer);
-            return true;
+            var type = Unify(targetType, nonterminal.Type);
+            if (type is not null)
+            {
+                output = FromNode(nonterminal, type, serializer);
+                return true;
+            }
         }
         output = default;
         return false;
@@ -33,8 +37,8 @@ public class ObjectMapper : IChtMapper
         }
         var type = value.GetType();
         output = new ChtNonterminal(
-            type.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? type.Name,
-            value.GetType().GetProperties().Where(x => x.CanRead)
+            GetTypeName(type),
+            type.GetProperties().Where(x => x.CanRead)
                 .Where(prop => prop.GetCustomAttribute<ChtIgnoreAttribute>() is null)
                 .SelectMany(prop =>
                 {
@@ -48,6 +52,32 @@ public class ObjectMapper : IChtMapper
         );
         return true;
     }
+
+    private Type? Unify(Type targetType, string nodeType)
+    {
+        if (!_typeMap.TryGetValue(nodeType, out Type result))
+        {
+            return null;
+        }
+
+        if (result.IsGenericTypeDefinition)
+        {
+            int arity = result.GetGenericArguments().Length;
+            if (targetType.IsGenericType && targetType.GenericTypeArguments.Length == arity)
+            {
+                result = result.MakeGenericType(targetType.GenericTypeArguments);
+            }
+            else
+            {
+                result = result.MakeGenericType(Enumerable.Repeat(typeof(object), arity).ToArray());
+            }
+        }
+
+        return result.IsAssignableTo(targetType) ? result : null;
+    }
+        
+    private static string GetTypeName(Type type)
+        => type.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? type.Name.Split("`")[0];
 
     private object? FromNode(ChtNonterminal node, Type type, ChtSerializer serializer)
     {
