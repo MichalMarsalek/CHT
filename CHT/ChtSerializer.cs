@@ -20,8 +20,18 @@ public class ChtSerializer
     /// </summary>
     public bool UseRestOfLineNodes = true;
 
+    /// <summary>
+    /// Mappers used to map between CHT nodes and .NET objects.
+    /// Later ones take precedence. That is, mappers are tried in reverse order of addition.
+    /// </summary>
     public IList<IChtMapper> Mappers { get; set; } = [];
 
+    /// <summary>
+    /// Converts a .NET object to a CHT node.
+    /// </summary>
+    /// <typeparam name="T">Type of the value.</typeparam>
+    /// <param name="value">Value to map.</param>
+    /// <returns>The mapped node.</returns>
     public ChtNode ToNode<T>(T value)
     {
         foreach (var mapper in Mappers.Reverse())
@@ -41,9 +51,21 @@ public class ChtSerializer
         throw new ChtMappingException(null, $"No mapper able to handle value of type {typeof(T).Name}.");
     }
 
+    /// <summary>
+    /// Converts a CHT node to a .NET object.
+    /// </summary>
+    /// <typeparam name="T">The required type of the output. May be object when there is no constraint.</typeparam>
+    /// <param name="node">Node to map.</param>
+    /// <returns>The resulting mapped value.</returns>
     public T FromNode<T>(ChtNode node)
         => (T)FromNode(node, typeof(T));
 
+    /// <summary>
+    /// Converts a CHT node to a .NET object.
+    /// </summary>
+    /// <param name="node">Node to map.</param>
+    /// <param name="type">The required type of the output. May be object when there is no constraint.</param>
+    /// <returns>The resulting mapped value.</returns>
     public object? FromNode(ChtNode node, Type type)
     {
         foreach (var mapper in Mappers.Reverse())
@@ -63,15 +85,37 @@ public class ChtSerializer
         throw new ChtMappingException(null, $"No mapper able to handle node {(node is ChtTerminal terminal ? terminal.ToString() : node is ChtNonterminal nonterminal ? nonterminal.Type + "(...)" : '?')}");
     }
 
+    /// <summary>
+    /// Serializes a .NET object to a CHT document.
+    /// </summary>
+    /// <typeparam name="T">Type of the value.</typeparam>
+    /// <param name="value">Value to serialize.</param>
+    /// <returns>The serialized value as a string.</returns>
     public string Serialize<T>(T value)
         => Emit(ToNode(value));
 
-    public T Deserialize<T>(string value)
-        => FromNode<T>(Parse(value));
+    /// <summary>
+    /// Deserializes a CHT document to a .NET object.
+    /// </summary>
+    /// <typeparam name="T">The required type of the value.</typeparam>
+    /// <param name="source">Content of the CHT document to deserialize.</param>
+    /// <returns>Tje deserialized value.</returns>
+    public T Deserialize<T>(string source)
+        => FromNode<T>(Parse(source));
 
+    /// <summary>
+    /// Parse a CHT document.
+    /// </summary>
+    /// <param name="source">Source string representing the tree.</param>
+    /// <returns>A parsed CHT as the root node.</returns>
     public ChtNode Parse(string source)
         => ChtParser.Parse(source);
 
+    /// <summary>
+    /// Emits a CHT node as a string.
+    /// </summary>
+    /// <param name="node">Node to emit.</param>
+    /// <returns>A CHT document corresponding to the input CHT node.</returns>
     public string Emit(ChtNode node)
     {
         var depths = new Dictionary<ChtNode, int>();
