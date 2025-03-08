@@ -1,27 +1,44 @@
 ﻿using System.Collections;
+using System.Reflection;
 
 namespace Cht.Mappers;
-public class IEnumerableMapper : ChtMapper<IEnumerable>
+public class IEnumerableMapper : IChtMapper
 {
-    public override bool FromNode(ChtNode node, ChtSerializer serializer, out IEnumerable output)
+    public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
         output = default;
+
         if (node is ChtNonterminal nonterminal && nonterminal.Type == "List")
         {
-            output = nonterminal.Children.Select(serializer.FromNode<object>);
-            return true;
+            if (targetType.IsGenericType && targetType.GenericTypeArguments.Length == 1)
+            {
+                var targetItemType = targetType.GenericTypeArguments[0];
+                targetType = typeof(List<>).MakeGenericType(targetItemType);
+                output = Activator.CreateInstance(targetType);
+                foreach (var item in nonterminal.Children)
+                {
+                    ((IList)output!).Add(serializer.FromNode(item, targetItemType));
+                }
+            }
+            else
+            {
+                output = nonterminal.Children.Select(serializer.FromNode<object>).ToList();
+            }
+
+            return output is not null && output.GetType().IsAssignableTo(targetType);
         }
         return false;
     }
 
-    public override bool ToNode(IEnumerable value, ChtSerializer serializer, out ChtNode output)
+    public bool ToNode(object? value, ChtSerializer serializer, out ChtNode output)
     {
-        if (value is null)
+        if (value is IEnumerable enumerable)
         {
-            output = default;
-            return false;
+            output = new ChtNonterminal("List", enumerable.Cast<object>().Select(serializer.ToNode));
+            return true;
         }
-        output = new ChtNonterminal("List", value.Cast<object>().Select(serializer.ToNode));
-        return true;
+
+        output = default;
+        return false;
     }
 }

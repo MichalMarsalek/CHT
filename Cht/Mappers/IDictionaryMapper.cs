@@ -1,40 +1,58 @@
 ﻿using System.Collections;
 
 namespace Cht.Mappers;
-public class IDictionaryMapper : ChtMapper<IDictionary>
+public class IDictionaryMapper : IChtMapper
 {
-    public override bool FromNode(ChtNode node, ChtSerializer serializer, out IDictionary output)
+    public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
         output = default;
         if (node is ChtNonterminal nonterminal && nonterminal.Type == "Dictionary")
         {
             if (nonterminal.Children.All(x => x is ChtNonterminal pair && pair.Children.Count == 2))
             {
-                output = nonterminal.Children.Cast<ChtNonterminal>().ToDictionary(
-                    pair => serializer.FromNode<object>(pair.Children[0]),
-                    pair => serializer.FromNode<object>(pair.Children[1])
-                );
-                return true;
+                var children = nonterminal.Children.Cast<ChtNonterminal>();
+                if (targetType.IsGenericType && targetType.GenericTypeArguments.Length == 2)
+                {
+                    var keyType = targetType.GetGenericArguments()[0];
+                    var valueType = targetType.GetGenericArguments()[1];
+                    targetType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+                    output = Activator.CreateInstance(targetType);
+                    foreach (var pair in children)
+                    {
+                        var key = serializer.FromNode(pair.Children[0], keyType);
+                        var value = serializer.FromNode(pair.Children[1], valueType);
+                        ((IDictionary)output!).Add(key, value);
+                    }
+                }
+                else
+                {
+                    output = children.ToDictionary(
+                        pair => serializer.FromNode<object>(pair.Children[0]),
+                        pair => serializer.FromNode<object>(pair.Children[1])
+                    );
+                }
+                return output is not null && output.GetType().IsAssignableTo(targetType);
             }
             throw new ArgumentException("Dictionary node must contain only pairs.");
         }
         return false;
     }
 
-    public override bool ToNode(IDictionary value, ChtSerializer serializer, out ChtNode output)
+    public bool ToNode(object? value, ChtSerializer serializer, out ChtNode output)
     {
-        if (value is null)
+        if (value is IDictionary dictionary)
         {
-            output = default;
-            return false;
+            output = new ChtNonterminal(
+                "Dictionary",
+                dictionary.Keys.Cast<object>().Select(key => new ChtNonterminal(
+                    "KeyValue",
+                    serializer.ToNode(key), serializer.ToNode(dictionary[key])
+                ))
+            );
+            return true;
         }
-        output = new ChtNonterminal(
-            "Dictionary",
-            value.Keys.Cast<object>().Select(key => new ChtNonterminal(
-                "KeyValue",
-                serializer.ToNode(key), serializer.ToNode(value[key])
-            ))
-        );
-        return true;
+
+        output = default;
+        return false;
     }
 }

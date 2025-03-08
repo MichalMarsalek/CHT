@@ -13,9 +13,9 @@ public class EnumMapper : IChtMapper
             .ToDictionary(x => x.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? x.Name, x => x);
     }
 
-    public bool FromNode(ChtNode node, ChtSerializer serializer, out object? output)
+    public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
-        if (node is ChtNonterminal nonterminal && _typeMap.TryGetValue(nonterminal.Type, out Type type))
+        if (node is ChtNonterminal nonterminal && _typeMap.TryGetValue(nonterminal.Type, out Type type) && type.IsAssignableTo(targetType))
         {
             if (nonterminal.Children.Count == 1 && nonterminal.Children[0] is ChtTerminal valueNode && valueNode.IsJustRaw)
             {

@@ -1,10 +1,12 @@
 ﻿using Cht;
 using Cht.Mappers;
+using System.Xml.Linq;
+using TUnit.Assertions.AssertConditions.Operators;
 
 public class ChtMappersTests
 {
     [Test]
-    public async Task ObjectMapperToNode_RespectsAttributes()
+    public async Task ObjectMapper_DefinesInverseFunctions()
     {
         var data = new TestBinaryNode
         {
@@ -18,15 +20,43 @@ public class ChtMappersTests
             Meta = "meta 5"
         };
 
-        var serializer = new ChtSerializer().AddObjectMapper([]).AddIEnumerableMapper().AddStringMapper();
-        var output = serializer.ToNode(data);
-        var expectedOutput = """
-        Binary:
-          Nullary: "Left"
-          Binary: Nullary("RightLeft") Nullary("RightRight" "A" "C" "B")
-        """;
+        var nodes = new ChtNonterminal(
+            "Binary",
+            new ChtNonterminal("Nullary", ChtTerminal.JustQuoted("Left")),
+            new ChtNonterminal(
+                "Binary",
+                new ChtNonterminal("Nullary", ChtTerminal.JustQuoted("RightLeft")),
+                new ChtNonterminal("Nullary", ChtTerminal.JustQuoted("RightRight"), ChtTerminal.JustQuoted("A"), ChtTerminal.JustQuoted("C"), ChtTerminal.JustQuoted("B"))
+            )
+        );
 
-        await Assert.That(serializer.Emit(output)).IsEqualTo(expectedOutput);
+        var serializer = new ChtSerializer().AddObjectMapper([typeof(TestBinaryNode), typeof(TestNullaryNode)]).AddIEnumerableMapper().AddStringMapper();
+
+        await Assert.That(serializer.ToNode(data)).IsEquivalentTo(nodes);
+
+        (data as dynamic).Left.Meta = (data as dynamic).Right.Left.Meta = (data as dynamic).Right.Right.Meta = (data as dynamic).Right.Meta = data.Meta = null;
+        await Assert.That(serializer.FromNode<object>(nodes)).IsEquivalentTo(data);
+    }
+
+    [Test]
+    public async Task IDictionaryMapper_WhenInsideObject_DefinesInverseFunctions()
+    {
+        var serializer = new ChtSerializer().AddObjectMapper([typeof(TestObjectWithDictionary)]).AddIDictionaryMapper().AddStringMapper();
+        
+        var data = new TestObjectWithDictionary
+        {
+            Name = "Test",
+            Values = new Dictionary<string, string> { ["A"] = "1", ["B"] = "2" }
+        };
+        var nodes = new ChtNonterminal(
+            "TestObjectWithDictionary",
+            ChtTerminal.JustQuoted("Test"),
+            new ChtNonterminal("KeyValue", ChtTerminal.JustQuoted("A"), ChtTerminal.JustQuoted("1")),
+            new ChtNonterminal("KeyValue", ChtTerminal.JustQuoted("B"), ChtTerminal.JustQuoted("2"))
+        );
+
+        await Assert.That(serializer.ToNode(data)).IsEquivalentTo(nodes);
+        await Assert.That(serializer.FromNode<object>(nodes)).IsEquivalentTo(data);
     }
 
     [Test]
@@ -153,4 +183,11 @@ public class ChtMappersTests
         Variant2
     }
 
+    public class  TestObjectWithDictionary
+    {
+        public string Name { get; set; } = "";
+
+        [ChtFlatten]
+        public Dictionary<string, string> Values { get; set; } = new();
+    }
 }

@@ -40,15 +40,19 @@ public class ChtSerializer
         }
         throw new ChtMappingException(null, $"No mapper able to handle value of type {typeof(T).Name}.");
     }
+
     public T FromNode<T>(ChtNode node)
+        => (T)FromNode(node, typeof(T));
+
+    public object? FromNode(ChtNode node, Type type)
     {
         foreach (var mapper in Mappers.Reverse())
         {
             try
             {
-                if (mapper.FromNode(node, this, out var output) && (output is T || output is null))
+                if (mapper.FromNode(node, type, this, out var output) && (output is null || output.GetType().IsAssignableTo(type)))
                 {
-                    return (T)output!;
+                    return output;
                 }
             }
             catch (Exception ex)
