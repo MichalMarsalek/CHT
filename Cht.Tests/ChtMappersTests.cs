@@ -1,8 +1,7 @@
 ﻿using Cht;
 using Cht.Mappers;
+using System.Drawing;
 using System.Numerics;
-using System.Xml.Linq;
-using TUnit.Assertions.AssertConditions.Operators;
 
 public class ChtMappersTests
 {
@@ -186,6 +185,14 @@ public class ChtMappersTests
         var mapper = new GuidMapper();
         var guid = Guid.NewGuid();
         await Mapper_DefinesInverseFunctions(mapper, guid, ChtTerminal.JustRaw(guid.ToString()));
+    }
+
+    [Test]
+    public async Task ColorMapper_DefinesInverseFunctions()
+    {
+        var mapper = new ColorMapper();
+        await Mapper_DefinesInverseFunctions(mapper, ColorTranslator.FromHtml("#000000"), ChtTerminal.JustRaw("#000000"));
+        await Mapper_DefinesInverseFunctions(mapper, ColorTranslator.FromHtml("#123456"), ChtTerminal.JustRaw("#123456"));
     }
 
     [Test]

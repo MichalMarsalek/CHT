@@ -138,13 +138,21 @@ public static class ChtSerializerExtensions
         => serializer.AddMapper(new GuidMapper());
 
     /// <summary>
-    /// Adds a´URI mapper to the serializer.
+    /// Adds a Uri mapper to the serializer.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
-    /// <param name="uriType">Type name of the URI nonterminal node, null means terminal node.</param>
+    /// <param name="uriType">Type name of the Uri nonterminal node, null means terminal node.</param>
     /// <returns>The same serializer reference.</returns>
     public static ChtSerializer AddUriMapper(this ChtSerializer serializer, string? uriType)
         => serializer.AddMapper(new UriMapper(uriType));
+
+    /// <summary>
+    /// Adds a Color mapper to the serializer.
+    /// </summary>
+    /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <returns>The same serializer reference.</returns>
+    public static ChtSerializer AddColorMapper(this ChtSerializer serializer)
+        => serializer.AddMapper(new ColorMapper());
 
     /// <summary>
     /// Adds an Enum mapper to the serializer.
@@ -167,7 +175,7 @@ public static class ChtSerializerExtensions
 
     /// <summary>
     /// Adds common mappers to the serializer.
-    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, Long, BigInteger, Float, Double, Decimal, String, DateOnly, TimeOnly, Guid, Uri.
+    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, Long, BigInteger, Float, Double, Decimal, String, DateOnly, TimeOnly, Guid, Uri, Color.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <param name="types">Types to register for the ObjectMapper & EnumMapper.</param>
@@ -192,11 +200,12 @@ public static class ChtSerializerExtensions
         .AddDateOnlyMapper()
         .AddTimeOnlyMapper()
         .AddGuidMapper()
-        .AddUriMapper(uriType);
+        .AddUriMapper(uriType)
+        .AddColorMapper();
 
     /// <summary>
     /// Adds common mappers to the serializer.
-    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, Long, BigInteger, Float, Double, Decimal, String, DateOnly, TimeOnly, Guid.
+    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, Long, BigInteger, Float, Double, Decimal, String, DateOnly, TimeOnly, Guid, Color.
     /// </summary>
     /// <typeparam name="T">All types from the assembly containing T are registered.</typeparam>
     /// <param name="serializer">Serializer to add the mapper to.</param>
