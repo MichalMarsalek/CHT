@@ -109,7 +109,7 @@ A type of the node followed by a colon `:` and a non-newline whitespace separate
 For example:
 
 ```
-RestOfLineNonterminal<T>: "its first child" "its second child"
+RestOfLineNonterminal: "its first child" "its second child"
 ```
 
 
@@ -119,7 +119,7 @@ A type of the node followed by a left paren `(`a non-newline whitespace separate
 For example:
 
 ```
-FunctionNonterminal<T>("its first child" "its second child")
+FunctionNonterminal("its first child" "its second child")
 ```
 
 Note that this syntax cannot span multiple lines.
@@ -130,7 +130,7 @@ A type of the node followed by a colon `:` a newline an indentation increase and
 For example:
 
 ```
-BlockNonterminal<T>:
+BlockNonterminal:
     "its first child"
     "its second child"
 ```
@@ -140,13 +140,14 @@ The root may be any node as defined above.
 
 ## The C# library
 
-The `ChtSerializer` class is used to `Serialize`/`Deserialize` values to/from CHT. CHT does not inherently define any types and their serializations. To convert between CHT nodes and CLR types the `ChtSerializer` needs a collection of mappers - implementations of `IChtMapper`. These mappers can be defined by the user, but some common mappers are predefined and can be registered using extension methods: `AddNullMapper`, `AddStringMapper`, `AddBoolMapper`, `AddIntMapper`, `AddDateOnlyMapper`, `AddTimeOnlyMapper`, `AddObjectMapper`, `AddIEnumerableMapper`, `AddIDictionaryMapper`, `AddGuidMapper`, `AddEnumMapper`, or all at once using `AddCommonMappers`. The predefined object mapper and enum mapper, read attributes `ChtFlattenAttribute`, `ChtIgnoreAttribute`, `ChtTypeAttribute`. If the predefined object and enum mapper are to be used for deserialization, they need to be provided with a collection of supported types, for serialization-only mode that is not neccesary.
+The `ChtSerializer` class is used to `Serialize`/`Deserialize` values to/from CHT. CHT does not inherently define any types and their serializations. To convert between CHT nodes and CLR types the `ChtSerializer` needs a collection of mappers - implementations of `IChtMapper`. These mappers can be defined by the user, but some common mappers are predefined and can be registered using extension methods: `AddNullMapper`, `AddStringMapper`, `AddBoolMapper`, `AddIntMapper`, `AddDateOnlyMapper`, `AddTimeOnlyMapper`, `AddObjectMapper`, `AddIEnumerableMapper`, `AddIDictionaryMapper`, `AddGuidMapper`, `AddEnumMapper`, or all at once using `AddCommonMappers`. The predefined object mapper and enum mapper, read attributes `ChtFlattenAttribute`, `ChtIgnoreAttribute`, `ChtTypeAttribute`. If the predefined enum mapper is to be used for deserialization, it either always needs a precise target or they need to be provided with a collection of supported types. If the predefined object mapper is to be used for deserialization, it needs to be provided with a collection of supported types.
 
 Types and serializer for the AST example can be defined as:
 
 ```cs
 var serializer = new ChtSerializer()
-    .AddObjectMapper(typeof(Node).Assembly.GetTypes().Where(x => x.IsAssignableTo(typeof(Node))))
+    .AddObjectMapper<Node>()
+    .AddIEnumerableMapper()
     .AddMapper(new SymbolMapper())
     .AddMapper(new IntLiteralMapper())
     .AddMapper(new StringLiteralMapper())

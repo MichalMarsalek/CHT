@@ -101,18 +101,30 @@ public static class ChtSerializerExtensions
     /// Adds an Enum mapper to the serializer.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <param name="style">Serialization style.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddEnumMapper(this ChtSerializer serializer, IEnumerable<Type> enumTypes)
-    => serializer.AddMapper(new EnumMapper(enumTypes));
+    public static ChtSerializer AddEnumMapper(this ChtSerializer serializer, IEnumerable<Type> enumTypes, EnumMappingStyle style = EnumMappingStyle.TypedRawName)
+        => serializer.AddMapper(new EnumMapper(enumTypes, style));
 
+    /// <summary>
+    /// Adds an Enum mapper to the serializer.
+    /// </summary>
+    /// <typeparam name="T">All enums from the assembly containing T are registered.</typeparam>
+    /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <param name="style">Serialization style.</param>
+    /// <returns>The same serializer reference.</returns>
+    public static ChtSerializer AddEnumMapper<T>(this ChtSerializer serializer, EnumMappingStyle style = EnumMappingStyle.TypedRawName)
+        => serializer.AddEnumMapper(typeof(T).Assembly.GetTypes(), style);
 
     /// <summary>
     /// Adds common mappers to the serializer.
     /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, String, DateOnly, TimeOnly, Guid.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <param name="types">Types to register for the ObjectMapper & EnumMapper.</param>
+    /// <param name="enumStyle">Enum serialization style.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddCommonMappers(this ChtSerializer serializer, IEnumerable<Type> types)
+    public static ChtSerializer AddCommonMappers(this ChtSerializer serializer, IEnumerable<Type> types, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName)
         => serializer
         .AddObjectMapper(types)
         .AddEnumMapper(types)
@@ -125,4 +137,15 @@ public static class ChtSerializerExtensions
         .AddDateOnlyMapper()
         .AddTimeOnlyMapper()
         .AddGuidMapper();
+
+    /// <summary>
+    /// Adds common mappers to the serializer.
+    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, String, DateOnly, TimeOnly, Guid.
+    /// </summary>
+    /// <typeparam name="T">All types from the assembly containing T are registered.</typeparam>
+    /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <param name="enumStyle">Enum serialization style.</param>
+    /// <returns>The same serializer reference.</returns>
+    public static ChtSerializer AddCommonMappers<T>(this ChtSerializer serializer, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName)
+        => AddCommonMappers(serializer, typeof(T).Assembly.GetTypes(), enumStyle);
 }

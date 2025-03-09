@@ -78,8 +78,7 @@ public class ChtMappersTests
             new ChtNonterminal("KeyValue", ChtTerminal.JustQuoted("B"), ChtTerminal.JustQuoted("2"))
         );
 
-        await Assert.That(serializer.ToNode(data)).IsEquivalentTo(nodes);
-        await Assert.That(serializer.FromNode<object>(nodes)).IsEquivalentTo(data);
+        await Mapper_DefinesInverseFunctions(serializer, data, nodes);
     }
 
     [Test]
@@ -101,24 +100,22 @@ public class ChtMappersTests
     [Test]
     public async Task IDictionaryMapper_DefinesInverseFunctions()
     {
-        var mapper = new IDictionaryMapper();
-        await Mapper_DefinesInverseFunctions(mapper, new Dictionary<int, int> { [5] = 2, [3] = 4 }, new ChtNonterminal(
+        var serializer = new ChtSerializer().AddIntMapper().AddIDictionaryMapper();
+        await Mapper_DefinesInverseFunctions(serializer, new Dictionary<int, int> { [5] = 2, [3] = 4 }, new ChtNonterminal(
             "Dictionary",
             new ChtNonterminal("KeyValue", ChtTerminal.JustRaw("5"), ChtTerminal.JustRaw("2")),
             new ChtNonterminal("KeyValue", ChtTerminal.JustRaw("3"), ChtTerminal.JustRaw("4"))
-        ),
-        new ChtSerializer().AddIntMapper());
+        ));
     }
 
     [Test]
     public async Task IEnumerableMapper_DefinesInverseFunctions()
     {
-        var mapper = new IEnumerableMapper();
-        await Mapper_DefinesInverseFunctions(mapper, new List<int> { 2, 4 }, new ChtNonterminal(
+        var serializer = new ChtSerializer().AddIntMapper().AddIEnumerableMapper();
+        await Mapper_DefinesInverseFunctions(serializer, new List<int> { 2, 4 }, new ChtNonterminal(
             "List",
-            new ChtTerminal { Raw = "2"}, ChtTerminal.JustRaw("4")
-        ),
-        new ChtSerializer().AddIntMapper());
+            new ChtTerminal { Raw = "2" }, ChtTerminal.JustRaw("4")
+        ));
     }
 
     [Test]
@@ -163,16 +160,27 @@ public class ChtMappersTests
     [Test]
     public async Task EnumMapper_DefinesInverseFunctions()
     {
-        var mapper = new EnumMapper([typeof(TestEnum)]);
-        await Mapper_DefinesInverseFunctions(mapper, TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("variant1")));
+        var type = typeof(TestEnum);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.UntypedRawName), TestEnum.Variant1, ChtTerminal.JustRaw("variant1"), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.UntypedQuotedName), TestEnum.Variant1, ChtTerminal.JustQuoted("Variant1"), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.UntypedOrdinal), TestEnum.Variant1, ChtTerminal.JustRaw("1"), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([type], EnumMappingStyle.TypedRawName), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("variant1")));
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.TypedRawName), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("variant1")), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([type], EnumMappingStyle.TypedQuotedName), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustQuoted("Variant1")));
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.TypedQuotedName), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustQuoted("Variant1")), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([type], EnumMappingStyle.TypedOrdinal), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("1")));
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.TypedOrdinal), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("1")), type);
     }
 
-    private async Task Mapper_DefinesInverseFunctions(IChtMapper mapper, object? value, ChtNode node, ChtSerializer? serializer = null)
+    private async Task Mapper_DefinesInverseFunctions(IChtMapper mapper, object? value, ChtNode node, Type? targetType = null)
     {
-        serializer ??= new ChtSerializer();
-        serializer.AddMapper(mapper);
+        var serializer = new ChtSerializer().AddMapper(mapper);
+        await Mapper_DefinesInverseFunctions(serializer, value, node, targetType);
+    }
+    private async Task Mapper_DefinesInverseFunctions(ChtSerializer serializer, object? value, ChtNode node, Type? targetType = null)
+    {
         await Assert.That(serializer.ToNode(value)).IsEquivalentTo(node);
-        await Assert.That(serializer.FromNode<object>(node)).IsEquivalentTo(value);
+        await Assert.That(serializer.FromNode(node, targetType ?? typeof(object))).IsEquivalentTo(value);
     }
 
     public abstract class TestNode { }
@@ -202,8 +210,8 @@ public class ChtMappersTests
     [ChtType("Enum")]
     public enum TestEnum
     {
-        Variant1,
-        Variant2
+        Variant1 = 1,
+        Variant2 = 2
     }
 
     public class TestObjectWithDictionary
