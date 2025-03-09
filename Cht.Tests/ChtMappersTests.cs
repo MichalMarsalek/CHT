@@ -172,6 +172,18 @@ public class ChtMappersTests
         await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.TypedOrdinal), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("1")), type);
     }
 
+    [Test]
+    public async Task UriMapper_DefinesInverseFunctions()
+    {
+        var type = typeof(Uri);
+        var uri = "https://example.com/";
+        var value = new Uri(uri);
+        await Mapper_DefinesInverseFunctions(new UriMapper(null), value, ChtTerminal.JustQuoted(uri), type);
+        await Mapper_DefinesInverseFunctions(new UriMapper(), value, new ChtNonterminal("Uri", ChtTerminal.JustQuoted(uri)));
+        await Mapper_DefinesInverseFunctions(new UriMapper("Url"), value, new ChtNonterminal("Url", ChtTerminal.JustQuoted(uri)));
+        await Mapper_DefinesInverseFunctions(new UriMapper("Url"), value, new ChtNonterminal("Url", ChtTerminal.JustQuoted(uri)), type);
+    }
+
     private async Task Mapper_DefinesInverseFunctions(IChtMapper mapper, object? value, ChtNode node, Type? targetType = null)
     {
         var serializer = new ChtSerializer().AddMapper(mapper);

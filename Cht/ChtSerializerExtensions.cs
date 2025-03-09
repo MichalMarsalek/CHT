@@ -98,6 +98,15 @@ public static class ChtSerializerExtensions
         => serializer.AddMapper(new GuidMapper());
 
     /// <summary>
+    /// Adds a´URI mapper to the serializer.
+    /// </summary>
+    /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <param name="uriType">Type name of the URI nonterminal node, null means terminal node.</param>
+    /// <returns>The same serializer reference.</returns>
+    public static ChtSerializer AddUriMapper(this ChtSerializer serializer, string? uriType)
+        => serializer.AddMapper(new UriMapper(uriType));
+
+    /// <summary>
     /// Adds an Enum mapper to the serializer.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
@@ -118,13 +127,14 @@ public static class ChtSerializerExtensions
 
     /// <summary>
     /// Adds common mappers to the serializer.
-    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, String, DateOnly, TimeOnly, Guid.
+    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, String, DateOnly, TimeOnly, Guid, Uri.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <param name="types">Types to register for the ObjectMapper & EnumMapper.</param>
     /// <param name="enumStyle">Enum serialization style.</param>
+    /// <param name="uriType">Type name of the URI nonterminal node, null means terminal node.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddCommonMappers(this ChtSerializer serializer, IEnumerable<Type> types, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName)
+    public static ChtSerializer AddCommonMappers(this ChtSerializer serializer, IEnumerable<Type> types, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null)
         => serializer
         .AddObjectMapper(types)
         .AddEnumMapper(types)
@@ -136,7 +146,8 @@ public static class ChtSerializerExtensions
         .AddStringMapper()
         .AddDateOnlyMapper()
         .AddTimeOnlyMapper()
-        .AddGuidMapper();
+        .AddGuidMapper()
+        .AddUriMapper(uriType);
 
     /// <summary>
     /// Adds common mappers to the serializer.
@@ -145,7 +156,8 @@ public static class ChtSerializerExtensions
     /// <typeparam name="T">All types from the assembly containing T are registered.</typeparam>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <param name="enumStyle">Enum serialization style.</param>
+    /// <param name="uriType">Type name of the URI nonterminal node, null means terminal node.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddCommonMappers<T>(this ChtSerializer serializer, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName)
-        => AddCommonMappers(serializer, typeof(T).Assembly.GetTypes(), enumStyle);
+    public static ChtSerializer AddCommonMappers<T>(this ChtSerializer serializer, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null)
+        => AddCommonMappers(serializer, typeof(T).Assembly.GetTypes(), enumStyle, uriType);
 }

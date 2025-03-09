@@ -2,16 +2,11 @@
 using System.Reflection;
 
 namespace Cht.Mappers;
-public class ObjectMapper : IChtMapper
+public class ObjectMapper(IEnumerable<Type> types) : IChtMapper
 {
-    private readonly Dictionary<string, Type> _typeMap;
-
-    public ObjectMapper(IEnumerable<Type> types)
-    {
-        _typeMap = types
+    private readonly Dictionary<string, Type> _typeMap = types
             .Where(x => !x.IsEnum)
             .ToDictionary(GetTypeName, x => x);
-    }
 
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {

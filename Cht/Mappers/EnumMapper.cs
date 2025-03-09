@@ -2,18 +2,12 @@ using System.Reflection;
 
 namespace Cht.Mappers;
 
-public class EnumMapper : IChtMapper
+public class EnumMapper(IEnumerable<Type> enumTypes, EnumMappingStyle style) : IChtMapper
 {
-    private readonly Dictionary<string, Type> _typeMap;
-    private readonly EnumMappingStyle _style;
-
-    public EnumMapper(IEnumerable<Type> enumTypes, EnumMappingStyle style)
-    {
-        _typeMap = enumTypes
+    private readonly Dictionary<string, Type> _typeMap = enumTypes
             .Where(x => x.IsEnum)
             .ToDictionary(x => x.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? x.Name, x => x);
-        _style = style;
-    }
+    private readonly EnumMappingStyle _style = style;
 
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
