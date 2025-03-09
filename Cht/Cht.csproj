@@ -4,6 +4,23 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>CompactHeterogeneousTree</PackageId>
+    <Title>CompactHeterogeneousTree</Title>
+    <Authors>MichalMarsalek</Authors>
+    <Product>CompactHeterogeneousTree</Product>
+    <Description>A compact human readable text format for representing heterogeneous trees.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/MichalMarsalek/CHT</RepositoryUrl>
+    <PackageTags>Tree,Serialization,Heterogeneous data</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
