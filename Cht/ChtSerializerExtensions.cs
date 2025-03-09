@@ -45,8 +45,48 @@ public static class ChtSerializerExtensions
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddIntMapper(this ChtSerializer serializer)
-        => serializer.AddMapper(new IntMapper());
+    public static ChtSerializer AddIntMapper(this ChtSerializer serializer, string suffix = "")
+        => serializer.AddMapper(new IntMapper(suffix));
+
+    /// <summary>
+    /// Adds a long mapper to the serializer.
+    /// </summary>
+    /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <returns>The same serializer reference.</returns>
+    public static ChtSerializer AddLongMapper(this ChtSerializer serializer, string suffix = "")
+        => serializer.AddMapper(new LongMapper(suffix));
+
+    /// <summary>
+    /// Adds a BigInteger mapper to the serializer.
+    /// </summary>
+    /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <returns>The same serializer reference.</returns>
+    public static ChtSerializer AddBigIntegerMapper(this ChtSerializer serializer, string suffix = "")
+        => serializer.AddMapper(new BigIntegerMapper(suffix));
+
+    /// <summary>
+    /// Adds a float mapper to the serializer.
+    /// </summary>
+    /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <returns>The same serializer reference.</returns>
+    public static ChtSerializer AddFloatMapper(this ChtSerializer serializer, string suffix = "")
+        => serializer.AddMapper(new FloatMapper(suffix));
+
+    /// <summary>
+    /// Adds a double mapper to the serializer.
+    /// </summary>
+    /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <returns>The same serializer reference.</returns>
+    public static ChtSerializer AddDoubleMapper(this ChtSerializer serializer, string suffix = "")
+        => serializer.AddMapper(new DoubleMapper(suffix));
+
+    /// <summary>
+    /// Adds a decimal mapper to the serializer.
+    /// </summary>
+    /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <returns>The same serializer reference.</returns>
+    public static ChtSerializer AddDecimalMapper(this ChtSerializer serializer, string suffix = "")
+        => serializer.AddMapper(new DecimalMapper(suffix));
 
     /// <summary>
     /// Adds a DateOnly mapper to the serializer.
@@ -127,14 +167,14 @@ public static class ChtSerializerExtensions
 
     /// <summary>
     /// Adds common mappers to the serializer.
-    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, String, DateOnly, TimeOnly, Guid, Uri.
+    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, Long, BigInteger, Float, Double, Decimal, String, DateOnly, TimeOnly, Guid, Uri.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <param name="types">Types to register for the ObjectMapper & EnumMapper.</param>
     /// <param name="enumStyle">Enum serialization style.</param>
     /// <param name="uriType">Type name of the URI nonterminal node, null means terminal node.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddCommonMappers(this ChtSerializer serializer, IEnumerable<Type> types, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null)
+    public static ChtSerializer AddCommonMappers(this ChtSerializer serializer, IEnumerable<Type> types, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null, bool useNumberSuffixes = false)
         => serializer
         .AddObjectMapper(types)
         .AddEnumMapper(types)
@@ -142,6 +182,11 @@ public static class ChtSerializerExtensions
         .AddIEnumerableMapper()
         .AddIDictionaryMapper()
         .AddBoolMapper()
+        .AddDecimalMapper(useNumberSuffixes ? "m" : "")
+        .AddDoubleMapper(useNumberSuffixes ? "d" : "")
+        .AddFloatMapper(useNumberSuffixes ? "f" : "")
+        .AddBigIntegerMapper(useNumberSuffixes ? "n" : "")
+        .AddLongMapper(useNumberSuffixes ? "L" : "")
         .AddIntMapper()
         .AddStringMapper()
         .AddDateOnlyMapper()
@@ -151,13 +196,13 @@ public static class ChtSerializerExtensions
 
     /// <summary>
     /// Adds common mappers to the serializer.
-    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, String, DateOnly, TimeOnly, Guid.
+    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, Long, BigInteger, Float, Double, Decimal, String, DateOnly, TimeOnly, Guid.
     /// </summary>
     /// <typeparam name="T">All types from the assembly containing T are registered.</typeparam>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <param name="enumStyle">Enum serialization style.</param>
     /// <param name="uriType">Type name of the URI nonterminal node, null means terminal node.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddCommonMappers<T>(this ChtSerializer serializer, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null)
-        => AddCommonMappers(serializer, typeof(T).Assembly.GetTypes(), enumStyle, uriType);
+    public static ChtSerializer AddCommonMappers<T>(this ChtSerializer serializer, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null, bool useNumberSuffixes = false)
+        => AddCommonMappers(serializer, typeof(T).Assembly.GetTypes(), enumStyle, uriType, useNumberSuffixes);
 }

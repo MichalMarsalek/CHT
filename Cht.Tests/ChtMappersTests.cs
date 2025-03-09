@@ -1,5 +1,6 @@
 ﻿using Cht;
 using Cht.Mappers;
+using System.Numerics;
 using System.Xml.Linq;
 using TUnit.Assertions.AssertConditions.Operators;
 
@@ -94,6 +95,8 @@ public class ChtMappersTests
     {
         var mapper = new DateOnlyMapper();
         await Mapper_DefinesInverseFunctions(mapper, new DateOnly(2000, 1, 1), ChtTerminal.JustRaw("2000-01-01"));
+        await Mapper_DefinesInverseFunctions(mapper, new DateOnly(2000, 1, 1), ChtTerminal.JustRaw("2000-01-01"), typeof(DateOnly));
+        await Mapper_DefinesInverseFunctions(mapper, new DateOnly(2000, 1, 1), ChtTerminal.JustRaw("2000-01-01"), typeof(DateOnly?));
         await Mapper_DefinesInverseFunctions(mapper, new DateOnly(2025, 11, 15), ChtTerminal.JustRaw("2025-11-15"));
     }
 
@@ -124,6 +127,32 @@ public class ChtMappersTests
         var mapper = new IntMapper();
         await Mapper_DefinesInverseFunctions(mapper, 4, ChtTerminal.JustRaw("4"));
         await Mapper_DefinesInverseFunctions(mapper, -58, ChtTerminal.JustRaw("-58"));
+
+        await Assert.That(new ChtSerializer().AddMapper(mapper).Deserialize<object>("0xff")).IsEqualTo(0xff);
+    }
+
+    [Test]
+    public async Task NumberMappers_WithSuffixes_DefineInverseFunctions()
+    {
+        var serializer = new ChtSerializer().AddCommonMappers([], useNumberSuffixes: true);
+        await Mapper_DefinesInverseFunctions(serializer, 4f, ChtTerminal.JustRaw("4.0f"));
+        await Mapper_DefinesInverseFunctions(serializer, 4d, ChtTerminal.JustRaw("4.0d"));
+        await Mapper_DefinesInverseFunctions(serializer, 4m, ChtTerminal.JustRaw("4.0m"));
+        await Mapper_DefinesInverseFunctions(serializer, 4, ChtTerminal.JustRaw("4"));
+        await Mapper_DefinesInverseFunctions(serializer, 4L, ChtTerminal.JustRaw("4L"));
+        await Mapper_DefinesInverseFunctions(serializer, new BigInteger(4), ChtTerminal.JustRaw("4n"));
+    }
+
+    [Test]
+    public async Task NumberMappers_WithTargets_DefineInverseFunctions()
+    {
+        var serializer = new ChtSerializer().AddCommonMappers([]);
+        await Mapper_DefinesInverseFunctions(serializer, 4f, ChtTerminal.JustRaw("4.0"), typeof(float));
+        await Mapper_DefinesInverseFunctions(serializer, 4d, ChtTerminal.JustRaw("4.0"), typeof(double));
+        await Mapper_DefinesInverseFunctions(serializer, 4m, ChtTerminal.JustRaw("4.0"), typeof(decimal));
+        await Mapper_DefinesInverseFunctions(serializer, 4, ChtTerminal.JustRaw("4"), typeof(int));
+        await Mapper_DefinesInverseFunctions(serializer, 4L, ChtTerminal.JustRaw("4"), typeof(long));
+        await Mapper_DefinesInverseFunctions(serializer, new BigInteger(4), ChtTerminal.JustRaw("4"), typeof(BigInteger));
     }
 
     [Test]
@@ -131,6 +160,8 @@ public class ChtMappersTests
     {
         var mapper = new NullMapper();
         await Mapper_DefinesInverseFunctions(mapper, null, ChtTerminal.JustRaw("null"));
+        await Mapper_DefinesInverseFunctions(mapper, null, ChtTerminal.JustRaw("null"), typeof(DateOnly));
+        await Mapper_DefinesInverseFunctions(mapper, null, ChtTerminal.JustRaw("null"), typeof(DateOnly?));
     }
 
     [Test]

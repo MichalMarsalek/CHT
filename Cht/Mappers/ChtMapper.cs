@@ -66,4 +66,7 @@ public abstract class ChtMapper<T> : IChtMapper
         output = default;
         return value is T typedValue && ToNode(typedValue, serializer, out output);
     }
+
+    protected internal static string RemoveSuffix(string value, string suffix)
+        => value.EndsWith(suffix) ? value.Substring(0, value.Length - suffix.Length) : value;
 }
