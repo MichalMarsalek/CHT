@@ -16,7 +16,7 @@ public class ChtParsingException : ChtException
     public int ColumnNumber { get; set; }
 
     public ChtParsingException(int lineNumber, int columnNumber, string message, Exception? innerException = null)
-        : base(message, innerException)
+        : base($"{message} Line: {lineNumber}, Col: {columnNumber}", innerException)
     {
         LineNumber = lineNumber;
         ColumnNumber = columnNumber;
