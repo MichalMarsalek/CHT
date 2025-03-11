@@ -29,6 +29,18 @@ public class ChtSerializer
     public IList<IChtMapper> Mappers { get; set; } = [];
 
     /// <summary>
+    /// Creates a new CHT serializer as a shallow copy of another one.
+    /// </summary>
+    /// <param name="chtSerializer">ChtSerializer to copy</param>
+    public ChtSerializer(ChtSerializer chtSerializer)
+    {
+        Indentation = chtSerializer.Indentation;
+        MaximumDepth = chtSerializer.MaximumDepth;
+        UseRestOfLineNodes = chtSerializer.UseRestOfLineNodes;
+        Mappers = [.. chtSerializer.Mappers];
+    }
+
+    /// <summary>
     /// Converts a .NET object to a CHT node.
     /// </summary>
     /// <typeparam name="T">Type of the value.</typeparam>
