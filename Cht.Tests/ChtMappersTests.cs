@@ -180,6 +180,14 @@ public class ChtMappersTests
     }
 
     [Test]
+    public async Task DateTimeOffsetMapper_DefinesInverseFunctions()
+    {
+        var mapper = new DateTimeOffsetMapper();
+        await Mapper_DefinesInverseFunctions(mapper, new DateTimeOffset(new DateOnly(2025, 3, 14), new TimeOnly(9, 30, 0, 0, 1), TimeSpan.Zero), ChtTerminal.JustRaw("2025-03-14T09:30:00.0000010+00:00"));
+        await Mapper_DefinesInverseFunctions(mapper, new DateTimeOffset(new DateOnly(2000, 1, 1), new TimeOnly(0, 0, 0), TimeSpan.FromMinutes(-210)), ChtTerminal.JustRaw("2000-01-01T00:00:00-03:30"));
+    }
+
+    [Test]
     public async Task GuidMapper_DefinesInverseFunctions()
     {
         var mapper = new GuidMapper();

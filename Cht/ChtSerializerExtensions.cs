@@ -105,6 +105,14 @@ public static class ChtSerializerExtensions
         => serializer.AddMapper(new TimeOnlyMapper());
 
     /// <summary>
+    /// Adds a DateTimeOffset mapper to the serializer.
+    /// </summary>
+    /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <returns>The same serializer reference.</returns>
+    public static ChtSerializer AddDateTimeOffsetMapper(this ChtSerializer serializer)
+        => serializer.AddMapper(new DateTimeOffsetMapper());
+
+    /// <summary>
     /// Adds an object mapper to the serializer.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
@@ -175,7 +183,7 @@ public static class ChtSerializerExtensions
 
     /// <summary>
     /// Adds common mappers to the serializer.
-    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, Long, BigInteger, Float, Double, Decimal, String, DateOnly, TimeOnly, Guid, Uri, Color.
+    /// To be precies, it adds the following mappers: Object, Enum, Null, IEnumerable, IDictionary, Bool, Int, Long, BigInteger, Float, Double, Decimal, String, DateOnly, TimeOnly, DateTimeOffset, Guid, Uri, Color.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <param name="types">Types to register for the ObjectMapper & EnumMapper.</param>
@@ -199,6 +207,7 @@ public static class ChtSerializerExtensions
         .AddStringMapper()
         .AddDateOnlyMapper()
         .AddTimeOnlyMapper()
+        .AddDateTimeOffsetMapper()
         .AddGuidMapper()
         .AddUriMapper(uriType)
         .AddColorMapper();
