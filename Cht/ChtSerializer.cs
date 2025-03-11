@@ -29,6 +29,13 @@ public class ChtSerializer
     public IList<IChtMapper> Mappers { get; set; } = [];
 
     /// <summary>
+    /// Empty constructor for CHT serializer.
+    /// </summary>
+    public ChtSerializer()
+    {
+    }
+
+    /// <summary>
     /// Creates a new CHT serializer as a shallow copy of another one.
     /// </summary>
     /// <param name="chtSerializer">ChtSerializer to copy</param>
