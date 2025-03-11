@@ -1,4 +1,6 @@
 ﻿using Cht;
+using Cht.Mappers;
+using TUnit.Assertions.AssertConditions.Throws;
 
 public class ChtSerializerTests
 {
@@ -118,4 +120,30 @@ public class ChtSerializerTests
         () => ("A(B:C)", new ChtParsingException(1, 6, "")),
         () => ("A:\n    B:\n  C()", new ChtParsingException(2, 7, "")),
     ];
+
+    [Test]
+    public async Task ToNode_OnCycle_Throws()
+    {
+        var serializer = new ChtSerializer().AddMapper(new TestNodeMapper());
+        var node = new TestNode { Parent = new TestNode() };
+        node.Parent!.Parent = node;
+        await Assert.That(() => serializer.ToNode(node)).Throws<ChtMappingException>().WithMessage("Circular reference detected.");
+    }
+
+    private class TestNode
+    {
+        public TestNode? Parent { get; set; }
+    }
+
+    private class TestNodeMapper : ChtMapper<TestNode>
+    {
+        public override bool ToNode(TestNode value, ChtSerializer serializer, out ChtNode output)
+        {
+            output = new ChtNonterminal("TestNode", serializer.ToNode(value.Parent));
+            return true;
+        }
+
+        public override bool FromNode(ChtNode node, ChtSerializer serializer, out TestNode output)
+            => throw new NotImplementedException();
+    }
 }

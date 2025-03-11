@@ -5,6 +5,8 @@ namespace Cht;
 
 public class ChtSerializer
 {
+    private Dictionary<int, object> currentlyMappingObjects = [];
+
     /// <summary>
     /// This value is appended to the existing line indentation upon each indentation increase.
     /// </summary>
@@ -34,21 +36,37 @@ public class ChtSerializer
     /// <returns>The mapped node.</returns>
     public ChtNode ToNode<T>(T value)
     {
-        foreach (var mapper in Mappers.Reverse())
-        {
-            try
+        int hashCode = 0;
+        if (value is not null) {
+            hashCode = value.GetHashCode();
+            if (currentlyMappingObjects.TryGetValue(hashCode, out var obj) && Object.ReferenceEquals(obj, value))
             {
-                if (mapper.ToNode(value, this, out var output))
+                throw new ChtMappingException(null, "Circular reference detected.");
+            }
+            currentlyMappingObjects[hashCode] = value;
+        }
+        try
+        {
+            foreach (var mapper in Mappers.Reverse())
+            {
+                try
                 {
-                    return output;
+                    if (mapper.ToNode(value, this, out var output))
+                    {
+                        return output;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new ChtMappingException(mapper, ex);
                 }
             }
-            catch (Exception ex)
-            {
-                throw new ChtMappingException(mapper, ex);
-            }
+            throw new ChtMappingException(null, $"No mapper able to handle value of type {typeof(T).Name}.");
         }
-        throw new ChtMappingException(null, $"No mapper able to handle value of type {typeof(T).Name}.");
+        finally
+        {
+            currentlyMappingObjects.Remove(hashCode);
+        }
     }
 
     /// <summary>
