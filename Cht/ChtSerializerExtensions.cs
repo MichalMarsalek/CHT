@@ -117,9 +117,10 @@ public static class ChtSerializerExtensions
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <param name="types">Types supported for deserialization. Serialization doesn't require the types to be registered.</param>
+    /// <param name="autoFlatten">Autoflattens all nonstring IEnumerable props.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddObjectMapper(this ChtSerializer serializer, IEnumerable<Type> types)
-        => serializer.AddMapper(new ObjectMapper(types));
+    public static ChtSerializer AddObjectMapper(this ChtSerializer serializer, IEnumerable<Type> types, bool autoFlatten = false)
+        => serializer.AddMapper(new ObjectMapper(types, autoFlatten));
 
     /// <summary>
     /// Adds an IEnumerable mapper to the serializer.
@@ -187,12 +188,13 @@ public static class ChtSerializerExtensions
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <param name="types">Types to register for the ObjectMapper & EnumMapper.</param>
+    /// <param name="autoFlatten">Autoflattens all nonstring IEnumerable props.</param>
     /// <param name="enumStyle">Enum serialization style.</param>
     /// <param name="uriType">Type name of the URI nonterminal node, null means terminal node.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddCommonMappers(this ChtSerializer serializer, IEnumerable<Type> types, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null, bool useNumberSuffixes = false)
+    public static ChtSerializer AddCommonMappers(this ChtSerializer serializer, IEnumerable<Type> types, bool autoFlatten = false, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null, bool useNumberSuffixes = false)
         => serializer
-        .AddObjectMapper(types)
+        .AddObjectMapper(types, autoFlatten)
         .AddEnumMapper(types)
         .AddNullMapper()
         .AddIEnumerableMapper()
@@ -218,9 +220,10 @@ public static class ChtSerializerExtensions
     /// </summary>
     /// <typeparam name="T">All types from the assembly containing T are registered.</typeparam>
     /// <param name="serializer">Serializer to add the mapper to.</param>
+    /// <param name="autoFlatten">Autoflattens all nonstring IEnumerable props.</param>
     /// <param name="enumStyle">Enum serialization style.</param>
     /// <param name="uriType">Type name of the URI nonterminal node, null means terminal node.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddCommonMappers<T>(this ChtSerializer serializer, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null, bool useNumberSuffixes = false)
-        => AddCommonMappers(serializer, typeof(T).Assembly.GetTypes(), enumStyle, uriType, useNumberSuffixes);
+    public static ChtSerializer AddCommonMappers<T>(this ChtSerializer serializer, bool autoFlatten = false, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null, bool useNumberSuffixes = false)
+        => AddCommonMappers(serializer, typeof(T).Assembly.GetTypes(), autoFlatten, enumStyle, uriType, useNumberSuffixes);
 }

@@ -2,7 +2,7 @@
 using System.Reflection;
 
 namespace Cht.Mappers;
-public class ObjectMapper(IEnumerable<Type> types) : IChtMapper
+public class ObjectMapper(IEnumerable<Type> types, bool autoFlatten = false) : IChtMapper
 {
     private readonly Dictionary<string, Type> _typeMap = types
             .Where(x => !x.IsEnum)
@@ -37,7 +37,12 @@ public class ObjectMapper(IEnumerable<Type> types) : IChtMapper
                 .Where(prop => prop.GetCustomAttribute<ChtIgnoreAttribute>() is null)
                 .SelectMany(prop =>
                 {
-                    var child = serializer.ToNode(prop.GetValue(value));
+                    var propValue = prop.GetValue(value);
+                    if (autoFlatten && propValue is IEnumerable enumerable && propValue is not string)
+                    {
+                        return enumerable.Cast<object>().Select(serializer.ToNode);
+                    }
+                    var child = serializer.ToNode(propValue);
                     if (child is ChtNonterminal nonterminal && prop.GetCustomAttribute<ChtFlattenAttribute>() is not null)
                     {
                         return nonterminal.Children;
@@ -76,14 +81,20 @@ public class ObjectMapper(IEnumerable<Type> types) : IChtMapper
 
     private object? FromNode(ChtNonterminal node, Type type, ChtSerializer serializer)
     {
-        var props = type.GetProperties().Where(x => x.CanWrite && x.GetCustomAttribute<ChtIgnoreAttribute>() is null).ToList();
-        if (props[..^1].Any(x => x.GetCustomAttribute<ChtFlattenAttribute>() is not null))
+        var props = type.GetProperties().Where(x => x.CanWrite && x.GetCustomAttribute<ChtIgnoreAttribute>() is null)
+            .Select(x => new {
+                Property = x,
+                Type = x.PropertyType,
+                IsFlattened = x.GetCustomAttribute<ChtFlattenAttribute>() is not null
+                    || (autoFlatten && x.PropertyType.IsAssignableTo(typeof(IEnumerable)) && x.PropertyType != typeof(string))
+            }).ToList();
+        if (props[..^1].Any(x => x.IsFlattened))
         {
             throw new ArgumentException("Only the last property can be flattened.");
         }
         var result = Activator.CreateInstance(type);
         var i = 0;
-        var isLastFlattened = props.Last().GetCustomAttribute<ChtFlattenAttribute>() is not null;
+        var isLastFlattened = props.Last().IsFlattened;
         if (isLastFlattened ? node.Children.Count < props.Count - 1 : node.Children.Count != props.Count)
         {
             throw new ChtMappingException(this, $"Invalid number of children to deserialize type {node.Type}. Got {node.Children.Count} , expected {(isLastFlattened ? $"{props.Count() - 1}+" : $"{props.Count()}")}.");
@@ -91,13 +102,13 @@ public class ObjectMapper(IEnumerable<Type> types) : IChtMapper
         foreach (var prop in props)
         {
             object? value;
-            if (prop.GetCustomAttribute<ChtFlattenAttribute>() is not null)
+            if (prop.IsFlattened)
             {
                 ChtNonterminal? template = null;
                 Exception? ex = null;
                 try
                 {   
-                    var templateType = prop.PropertyType.IsAssignableTo(typeof(IDictionary)) ? typeof(Dictionary<object, object>) : prop.PropertyType.IsAssignableTo(typeof(IEnumerable)) ? typeof(List<object>) : prop.PropertyType;
+                    var templateType = prop.Type.IsAssignableTo(typeof(IDictionary)) ? typeof(Dictionary<object, object>) : prop.Type.IsAssignableTo(typeof(IEnumerable)) ? typeof(List<object>) : prop.Type;
                     template = serializer.ToNode(Activator.CreateInstance(templateType)) as ChtNonterminal;
                 }
                 catch (Exception e)
@@ -110,12 +121,12 @@ public class ObjectMapper(IEnumerable<Type> types) : IChtMapper
                 }
 
                 template.Children = node.Children[i..];
-                value = serializer.FromNode(template, prop.PropertyType);
+                value = serializer.FromNode(template, prop.Type);
             } else
             {                
-                value = serializer.FromNode(node.Children[i], prop.PropertyType);
+                value = serializer.FromNode(node.Children[i], prop.Type);
             }
-            prop.SetValue(result, value);
+            prop.Property.SetValue(result, value);
             i++;
         }
         return result;

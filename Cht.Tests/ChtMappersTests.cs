@@ -36,6 +36,13 @@ public class ChtMappersTests
 
         (data as dynamic).Left.Meta = (data as dynamic).Right.Left.Meta = (data as dynamic).Right.Right.Meta = (data as dynamic).Right.Meta = data.Meta = null;
         await Assert.That(serializer.FromNode<object>(nodes)).IsEquivalentTo(data);
+
+        serializer = new ChtSerializer().AddObjectMapper([typeof(TestObjectWithList)], autoFlatten: true).AddIEnumerableMapper().AddStringMapper();
+        var data2 = new TestObjectWithList { Name = "Test", Values = new List<string> { "A", "B", "C" } };
+        var nodes2 = new ChtNonterminal("TestObjectWithList", ChtTerminal.JustQuoted("Test"), ChtTerminal.JustQuoted("A"), ChtTerminal.JustQuoted("B"), ChtTerminal.JustQuoted("C"));
+
+        await Assert.That(serializer.ToNode(data2)).IsEquivalentTo(nodes2);
+        await Assert.That(serializer.FromNode<object>(nodes2)).IsEquivalentTo(data2);
     }
 
     [Test]
@@ -277,7 +284,14 @@ public class ChtMappersTests
         public string Name { get; set; } = "";
 
         [ChtFlatten]
-        public Dictionary<string, string> Values { get; set; } = new();
+        public Dictionary<string, string> Values { get; set; } = [];
+    }
+
+    public class TestObjectWithList
+    {
+        public string Name { get; set; } = "";
+
+        public List<string> Values { get; set; } = [];
     }
 
     public class TestBaseObject
