@@ -1,5 +1,7 @@
 # The C# library
 
+The C# library is distributed on [nuget.org](https://www.nuget.org/packages/CompactHeterogeneousTree).
+
 The `ChtSerializer` class is used to `Serialize`/`Deserialize` values to/from CHT. CHT does not inherently define any types and their serializations. To convert between CHT nodes and CLR types the `ChtSerializer` needs a collection of mappers - implementations of `IChtMapper`. These mappers can be defined by the user, but some common mappers are predefined and can be registered using extension methods: `AddStringMapper`, `AddObjectMapper`, `AddEnumMapper`, `AddIntMapper`, etc., or all at once using `AddCommonMappers`. The predefined object mapper and enum mapper read attributes `ChtFlattenAttribute`, `ChtIgnoreAttribute`, `ChtTypeAttribute`. If the predefined enum mapper is to be used for deserialization, it either always needs a precise target or they need to be provided with a collection of supported types. If the predefined object mapper is to be used for deserialization, it needs to be provided with a collection of supported types.
 
 Types and serializer for the AST example can be defined as:
