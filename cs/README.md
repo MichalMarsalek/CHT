@@ -1,6 +1,6 @@
 # The C# library
 
-The `ChtSerializer` class is used to `Serialize`/`Deserialize` values to/from CHT. CHT does not inherently define any types and their serializations. To convert between CHT nodes and CLR types the `ChtSerializer` needs a collection of mappers - implementations of `IChtMapper`. These mappers can be defined by the user, but some common mappers are predefined and can be registered using extension methods: `AddStringMapper`, `AddObjectMapper`, `AddEnumMapper`, `AddIntMapper`, etc., or all at once using `AddCommonMappers`. The predefined object mapper and enum mapper read attributes `ChtFlattenAttribute`, `ChtIgnoreAttribute`, `ChtTypeAttribute`. If the predefined enum mapper is to be used for deserialization, it either always needs a precise target or they need to be provided with a collection of supported types. If the predefined object mapper is to be used for deserialization, it needs to be provided with a collection of supported types.
+The `ChtSerializer` class is used to `Serialize`/`Deserialize` values to/from CHT. CHT does not inherently define any types and their serializations. To convert between CHT nodes and CLR types the `ChtSerializer` needs a collection of mappers - implementations of `IChtMapper`. These mappers can be defined by the user, but some common mappers are predefined and can be registered using extension methods: `AddStringMapper`, `AddObjectMapper`, `AddEnumMapper`, `AddIntMapper`, etc., or all at once using `AddCommonMappers`. The predefined object mapper and enum mapper read attributes `ChtIgnoreAttribute`, `ChtTypeAttribute`. If the predefined enum mapper is to be used for deserialization, it either always needs a precise target or they need to be provided with a collection of supported types. If the predefined object mapper is to be used for deserialization, it needs to be provided with a collection of supported types. The object mapper flattens `List<T>` properties.
 
 Types and serializer for the AST example can be defined as:
 
@@ -81,14 +81,12 @@ public abstract class Node
 
 public class Block : Node
 {
-    [ChtFlatten]
     public List<Node> Children { get; set; } = [];
 }
 
 [ChtType("List")]
 public class ListLiteral : Node
 {
-    [ChtFlatten]
     public List<Node> Children { get; set; } = [];
 }
 
@@ -107,14 +105,12 @@ public class MethodCall : Node
 {
     public required Node Object { get; set; }
     public required Symbol Method { get; set; }
-    [ChtFlatten]
     public List<Node> Arguments { get; set; } = [];
 }
 
 public class FunctionCall : Node
 {
     public required Node Function { get; set; }
-    [ChtFlatten]
     public List<Node> Arguments { get; set; } = [];
 }
 

@@ -37,10 +37,15 @@ public class ChtNonterminal : ChtNode
         Children = children.ToList();
     }
 
-    public ChtNonterminal(string type,IEnumerable<ChtNode> children)
+    public ChtNonterminal(string type, IEnumerable<ChtNode> children)
     {
         Type = type;
         Children = children.ToList();
+    }
+
+    public override string ToString()
+    {
+        return $"{Type}(...)";
     }
 }
 

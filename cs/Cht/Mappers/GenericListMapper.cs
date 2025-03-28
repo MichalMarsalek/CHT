@@ -1,8 +1,9 @@
 ﻿using System.Collections;
 
 namespace Cht.Mappers;
-public class IEnumerableMapper : IChtMapper
+public class GenericListMapper : IChtMapper
 {
+    private static Type listType = typeof(List<>);
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
         output = default;
@@ -30,11 +31,14 @@ public class IEnumerableMapper : IChtMapper
     }
 
     public bool ToNode(object? value, ChtSerializer serializer, out ChtNode output)
-    {
-        if (value is IEnumerable enumerable)
-        {
-            output = new ChtNonterminal("List", enumerable.Cast<object>().Select(serializer.ToNode));
-            return true;
+    {        
+        if (value is IList list) {
+            var type = value.GetType();
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == listType)
+            {
+                output = new ChtNonterminal("List", list.Cast<object>().Select(serializer.ToNode));
+                return true;
+            }
         }
 
         output = default;

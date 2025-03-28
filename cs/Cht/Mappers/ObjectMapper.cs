@@ -2,7 +2,7 @@
 using System.Reflection;
 
 namespace Cht.Mappers;
-public class ObjectMapper(IEnumerable<Type> types, bool autoFlatten = false) : IChtMapper
+public class ObjectMapper(IEnumerable<Type> types, bool skipTrailingNulls = true) : IChtMapper
 {
     private readonly Dictionary<string, Type> _typeMap = types
             .Where(x => !x.IsEnum)
@@ -31,24 +31,25 @@ public class ObjectMapper(IEnumerable<Type> types, bool autoFlatten = false) : I
             return false;
         }
         var type = value.GetType();
+        var props = type.GetProperties().Where(x => x.CanRead)
+                .Where(prop => prop.GetCustomAttribute<ChtIgnoreAttribute>() is null)
+                .Select(prop => new { Property = prop, Value = prop.GetValue(value) });
+        if (skipTrailingNulls)
+        {
+            props = props.Reverse().SkipWhile(x => x.Value is null).Reverse();
+        }
         output = new ChtNonterminal(
             GetTypeName(type),
-            type.GetProperties().Where(x => x.CanRead)
-                .Where(prop => prop.GetCustomAttribute<ChtIgnoreAttribute>() is null)
-                .SelectMany(prop =>
+            props.SelectMany(prop =>
+            {
+                var propType = prop.Property.PropertyType;
+                if (prop.Value is IList list && propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(List<>))
                 {
-                    var propValue = prop.GetValue(value);
-                    if (autoFlatten && propValue is IEnumerable enumerable && propValue is not string)
-                    {
-                        return enumerable.Cast<object>().Select(serializer.ToNode);
-                    }
-                    var child = serializer.ToNode(propValue);
-                    if (child is ChtNonterminal nonterminal && prop.GetCustomAttribute<ChtFlattenAttribute>() is not null)
-                    {
-                        return nonterminal.Children;
-                    }
-                    return Enumerable.Repeat(child, 1);
-                })
+                    return list.Cast<object>().Select(serializer.ToNode);
+                }
+                var child = serializer.ToNode(prop.Value);
+                return Enumerable.Repeat(child, 1);
+            })
         );
         return true;
     }
@@ -82,53 +83,86 @@ public class ObjectMapper(IEnumerable<Type> types, bool autoFlatten = false) : I
     private object? FromNode(ChtNonterminal node, Type type, ChtSerializer serializer)
     {
         var props = type.GetProperties().Where(x => x.CanWrite && x.GetCustomAttribute<ChtIgnoreAttribute>() is null)
-            .Select(x => new {
-                Property = x,
-                Type = x.PropertyType,
-                IsFlattened = x.GetCustomAttribute<ChtFlattenAttribute>() is not null
-                    || (autoFlatten && x.PropertyType.IsAssignableTo(typeof(IEnumerable)) && x.PropertyType != typeof(string))
+            .Select(x => {
+                var type = x.PropertyType;
+                var acceptsSubvalue = false;
+                Type? listType = null;
+                Type? listItemType = null;
+                if (type.IsGenericType)
+                {
+                    listItemType = type.GenericTypeArguments[0];
+                    listType = typeof(List<>).MakeGenericType(listItemType);
+                    if (listType.IsAssignableTo(type))
+                    {
+                        acceptsSubvalue = true;
+                    }
+                    else
+                    {
+                        listItemType = listType = null;
+                    }
+                }
+                return new WritableProperty
+                {
+                    Property = x,
+                    Type = type,
+                    ListType = listType,
+                    ListItemType = listItemType,
+                    AcceptsValue = true,
+                    AcceptsSubvalue = acceptsSubvalue,
+                    List = listType != null ? (IList)Activator.CreateInstance(listType) : null,
+                };
             }).ToList();
-        if (props[..^1].Any(x => x.IsFlattened))
-        {
-            throw new ArgumentException("Only the last property can be flattened.");
-        }
         var result = Activator.CreateInstance(type);
-        var i = 0;
-        var isLastFlattened = props.Last().IsFlattened;
-        if (isLastFlattened ? node.Children.Count < props.Count - 1 : node.Children.Count != props.Count)
+        foreach (var child in node.Children)
         {
-            throw new ChtMappingException(this, $"Invalid number of children to deserialize type {node.Type}. Got {node.Children.Count} , expected {(isLastFlattened ? $"{props.Count() - 1}+" : $"{props.Count()}")}.");
-        }
-        foreach (var prop in props)
-        {
-            object? value;
-            if (prop.IsFlattened)
+            var childPlaced = false;
+            foreach (var prop in props)
             {
-                ChtNonterminal? template = null;
-                Exception? ex = null;
-                try
-                {   
-                    var templateType = prop.Type.IsAssignableTo(typeof(IDictionary)) ? typeof(Dictionary<object, object>) : prop.Type.IsAssignableTo(typeof(IEnumerable)) ? typeof(List<object>) : prop.Type;
-                    template = serializer.ToNode(Activator.CreateInstance(templateType)) as ChtNonterminal;
-                }
-                catch (Exception e)
+                if (prop.AcceptsValue)
                 {
-                    ex = e;
-                }
-                if (template is null)
-                {
-                    throw new ChtMappingException(this, "Can only deserialize flattened values serializable to Nonterminal nodes.", ex);
+                    try
+                    {
+                        var childValue = serializer.FromNode(child, prop.Type);
+                        prop.Property.SetValue(result, childValue);
+                        prop.AcceptsValue = false;
+                        prop.AcceptsSubvalue = false;
+                        childPlaced = true;
+                        break;
+                    }
+                    catch (ChtMappingException) { }
                 }
 
-                template.Children = node.Children[i..];
-                value = serializer.FromNode(template, prop.Type);
-            } else
-            {                
-                value = serializer.FromNode(node.Children[i], prop.Type);
+                if (prop.AcceptsSubvalue)
+                {
+                    try
+                    {
+                        var childValue = serializer.FromNode(child, prop.ListItemType!);
+                        prop.List!.Add(childValue);
+                        if (prop.AcceptsValue)
+                        {
+                            prop.Property.SetValue(result, prop.List);
+                            prop.AcceptsValue = false;
+                        }
+                        childPlaced = true;
+                        break;
+                    }
+                    catch (ChtMappingException) { }
+                }
             }
-            prop.Property.SetValue(result, value);
-            i++;
+            if (childPlaced) continue;
+            throw new ChtMappingException(this, $"Node {child.ToString()} could not be mapped to any unused property of {GetTypeName(type)}.");
         }
         return result;
+    }
+
+    private class WritableProperty
+    {
+        public required PropertyInfo Property { get; set; }
+        public required Type Type { get; set; }
+        public Type? ListType { get; set; }
+        public Type? ListItemType { get; set; }
+        public IList? List{ get; set; }
+        public bool AcceptsValue { get; set; }
+        public bool AcceptsSubvalue { get; set; }
     }
 }

@@ -30,14 +30,14 @@ public class ChtMappersTests
             )
         );
 
-        var serializer = new ChtSerializer().AddObjectMapper([typeof(TestBinaryNode), typeof(TestNullaryNode)]).AddIEnumerableMapper().AddStringMapper();
+        var serializer = new ChtSerializer().AddObjectMapper([typeof(TestBinaryNode), typeof(TestNullaryNode)]).AddGenericListMapper().AddStringMapper();
 
         await Assert.That(serializer.ToNode(data)).IsEquivalentTo(nodes);
 
         (data as dynamic).Left.Meta = (data as dynamic).Right.Left.Meta = (data as dynamic).Right.Right.Meta = (data as dynamic).Right.Meta = data.Meta = null;
         await Assert.That(serializer.FromNode<object>(nodes)).IsEquivalentTo(data);
 
-        serializer = new ChtSerializer().AddObjectMapper([typeof(TestObjectWithList)], autoFlatten: true).AddIEnumerableMapper().AddStringMapper();
+        serializer = new ChtSerializer().AddObjectMapper([typeof(TestObjectWithList)], skipTrailingNulls: true).AddGenericListMapper().AddStringMapper();
         var data2 = new TestObjectWithList { Name = "Test", Values = new List<string> { "A", "B", "C" } };
         var nodes2 = new ChtNonterminal("TestObjectWithList", ChtTerminal.JustQuoted("Test"), ChtTerminal.JustQuoted("A"), ChtTerminal.JustQuoted("B"), ChtTerminal.JustQuoted("C"));
 
@@ -69,23 +69,31 @@ public class ChtMappersTests
     }
 
     [Test]
-    public async Task IDictionaryMapper_WhenInsideObject_DefinesInverseFunctions()
+    public async Task ObjectMapper_WhenOutOfOrder_MapsFromNode()
     {
-        var serializer = new ChtSerializer().AddObjectMapper([typeof(TestObjectWithDictionary)]).AddIDictionaryMapper().AddStringMapper();
-        
-        var data = new TestObjectWithDictionary
+        var node = new ChtNonterminal("OutOfOrder", ChtTerminal.JustRaw("1"), ChtTerminal.JustQuoted("a"), ChtTerminal.JustRaw("2"), ChtTerminal.JustQuoted("b"), ChtTerminal.JustRaw("3"), ChtTerminal.JustQuoted("c"));
+        var data = new TestOutOfOrderObject
         {
-            Name = "Test",
-            Values = new Dictionary<string, string> { ["A"] = "1", ["B"] = "2" }
+            Text = "a",
+            Number = 1,
+            Texts = ["b", "c"],
+            Numbers = [2, 3]
         };
-        var nodes = new ChtNonterminal(
-            "TestObjectWithDictionary",
-            ChtTerminal.JustQuoted("Test"),
-            new ChtNonterminal("KeyValue", ChtTerminal.JustQuoted("A"), ChtTerminal.JustQuoted("1")),
-            new ChtNonterminal("KeyValue", ChtTerminal.JustQuoted("B"), ChtTerminal.JustQuoted("2"))
-        );
 
-        await Mapper_DefinesInverseFunctions(serializer, data, nodes);
+        var serializer = new ChtSerializer().AddObjectMapper([typeof(TestOutOfOrderObject)]).AddStringMapper().AddIntMapper();
+
+        await Assert.That(serializer.FromNode<object>(node)).IsEquivalentTo(data);
+    }
+
+    [Test]
+    public async Task ObjectMapper_WhenLastIsNull_MapsToNodeAndSkipsLast()
+    {
+        var node = new ChtNonterminal("Binary", new ChtNonterminal("Nullary", ChtTerminal.JustQuoted("x")));
+        var data = new TestBinaryNode { Left = new TestNullaryNode { Value = "x" } };
+
+        var serializer = new ChtSerializer().AddObjectMapper([typeof(TestBinaryNode), typeof(TestNullaryNode)]).AddGenericListMapper().AddStringMapper();
+
+        await Assert.That(serializer.ToNode(data)).IsEquivalentTo(node);
     }
 
     [Test]
@@ -109,7 +117,7 @@ public class ChtMappersTests
     [Test]
     public async Task IDictionaryMapper_DefinesInverseFunctions()
     {
-        var serializer = new ChtSerializer().AddIntMapper().AddIDictionaryMapper();
+        var serializer = new ChtSerializer().AddIntMapper().AddGenericDictionaryMapper();
         await Mapper_DefinesInverseFunctions(serializer, new Dictionary<int, int> { [5] = 2, [3] = 4 }, new ChtNonterminal(
             "Dictionary",
             new ChtNonterminal("KeyValue", ChtTerminal.JustRaw("5"), ChtTerminal.JustRaw("2")),
@@ -120,7 +128,7 @@ public class ChtMappersTests
     [Test]
     public async Task IEnumerableMapper_DefinesInverseFunctions()
     {
-        var serializer = new ChtSerializer().AddIntMapper().AddIEnumerableMapper();
+        var serializer = new ChtSerializer().AddIntMapper().AddGenericListMapper();
         await Mapper_DefinesInverseFunctions(serializer, new List<int> { 2, 4 }, new ChtNonterminal(
             "List",
             new ChtTerminal { Raw = "2" }, ChtTerminal.JustRaw("4")
@@ -264,9 +272,7 @@ public class ChtMappersTests
     public class TestNullaryNode : TestNode
     {
         public string Value { get; set; } = "";
-
-        [ChtFlatten]
-        public IEnumerable<string> Tags { get; set; } = [];
+        public List<string> Tags { get; set; } = [];
 
         [ChtIgnore]
         public string Meta { get; set; }
@@ -282,8 +288,6 @@ public class ChtMappersTests
     public class TestObjectWithDictionary
     {
         public string Name { get; set; } = "";
-
-        [ChtFlatten]
         public Dictionary<string, string> Values { get; set; } = [];
     }
 
@@ -305,5 +309,14 @@ public class ChtMappersTests
 
     public class TestInheritedObject : TestGenericObject<string>
     {
+    }
+
+    [ChtType("OutOfOrder")]
+    public class TestOutOfOrderObject
+    {
+        public string Text { get; set; }
+        public int Number { get; set; }
+        public List<string> Texts { get; set; }
+        public List<int> Numbers { get; set; }
     }
 }

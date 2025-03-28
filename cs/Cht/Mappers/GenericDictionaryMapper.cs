@@ -1,8 +1,9 @@
 ﻿using System.Collections;
 
 namespace Cht.Mappers;
-public class IDictionaryMapper : IChtMapper
+public class GenericDictionaryMapper : IChtMapper
 {
+    private static Type dictionaryType = typeof(Dictionary<,>);
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
         output = default;
@@ -15,7 +16,7 @@ public class IDictionaryMapper : IChtMapper
                 {
                     var keyType = targetType.GetGenericArguments()[0];
                     var valueType = targetType.GetGenericArguments()[1];
-                    targetType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+                    targetType = dictionaryType.MakeGenericType(keyType, valueType);
                     output = Activator.CreateInstance(targetType);
                     foreach (var pair in children)
                     {
@@ -42,14 +43,18 @@ public class IDictionaryMapper : IChtMapper
     {
         if (value is IDictionary dictionary)
         {
-            output = new ChtNonterminal(
-                "Dictionary",
-                dictionary.Keys.Cast<object>().Select(key => new ChtNonterminal(
-                    "KeyValue",
-                    serializer.ToNode(key), serializer.ToNode(dictionary[key])
-                ))
-            );
-            return true;
+            var type = dictionary.GetType();
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == dictionaryType)
+            {
+                output = new ChtNonterminal(
+                    "Dictionary",
+                    dictionary.Keys.Cast<object>().Select(key => new ChtNonterminal(
+                        "KeyValue",
+                        serializer.ToNode(key), serializer.ToNode(dictionary[key])
+                    ))
+                );
+                return true;
+            }
         }
 
         output = default;

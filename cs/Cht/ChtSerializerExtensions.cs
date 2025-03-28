@@ -117,26 +117,26 @@ public static class ChtSerializerExtensions
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <param name="types">Types supported for deserialization. Serialization doesn't require the types to be registered.</param>
-    /// <param name="autoFlatten">Autoflattens all nonstring IEnumerable props.</param>
+    /// <param name="skipTrailingNulls">Whether to skip trailing nulls when converting to ChtNode.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddObjectMapper(this ChtSerializer serializer, IEnumerable<Type> types, bool autoFlatten = false)
-        => serializer.AddMapper(new ObjectMapper(types, autoFlatten));
+    public static ChtSerializer AddObjectMapper(this ChtSerializer serializer, IEnumerable<Type> types, bool skipTrailingNulls = true)
+        => serializer.AddMapper(new ObjectMapper(types, skipTrailingNulls));
 
     /// <summary>
-    /// Adds an IEnumerable mapper to the serializer.
+    /// Adds a GenericList mapper to the serializer.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddIEnumerableMapper(this ChtSerializer serializer)
-        => serializer.AddMapper(new IEnumerableMapper());
+    public static ChtSerializer AddGenericListMapper(this ChtSerializer serializer)
+        => serializer.AddMapper(new GenericListMapper());
 
     /// <summary>
-    /// Adds an IDictionary mapper to the serializer.
+    /// Adds a GenericDictionary mapper to the serializer.
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddIDictionaryMapper(this ChtSerializer serializer)
-        => serializer.AddMapper(new IDictionaryMapper());
+    public static ChtSerializer AddGenericDictionaryMapper(this ChtSerializer serializer)
+        => serializer.AddMapper(new GenericDictionaryMapper());
 
     /// <summary>
     /// Adds a GUID mapper to the serializer.
@@ -188,17 +188,17 @@ public static class ChtSerializerExtensions
     /// </summary>
     /// <param name="serializer">Serializer to add the mapper to.</param>
     /// <param name="types">Types to register for the ObjectMapper & EnumMapper.</param>
-    /// <param name="autoFlatten">Autoflattens all nonstring IEnumerable props.</param>
+    /// <param name="skipTrailingNulls">Whether to skip trailing nulls when converting to ChtNode.</param>
     /// <param name="enumStyle">Enum serialization style.</param>
     /// <param name="uriType">Type name of the URI nonterminal node, null means terminal node.</param>
     /// <returns>The same serializer reference.</returns>
-    public static ChtSerializer AddCommonMappers(this ChtSerializer serializer, IEnumerable<Type> types, bool autoFlatten = false, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null, bool useNumberSuffixes = false)
+    public static ChtSerializer AddCommonMappers(this ChtSerializer serializer, IEnumerable<Type> types, bool skipTrailingNulls = true, EnumMappingStyle enumStyle = EnumMappingStyle.TypedRawName, string? uriType = null, bool useNumberSuffixes = false)
         => serializer
-        .AddObjectMapper(types, autoFlatten)
+        .AddObjectMapper(types, skipTrailingNulls)
         .AddEnumMapper(types)
         .AddNullMapper()
-        .AddIEnumerableMapper()
-        .AddIDictionaryMapper()
+        .AddGenericListMapper()
+        .AddGenericDictionaryMapper()
         .AddBoolMapper()
         .AddDecimalMapper(useNumberSuffixes ? "m" : "")
         .AddDoubleMapper(useNumberSuffixes ? "d" : "")
