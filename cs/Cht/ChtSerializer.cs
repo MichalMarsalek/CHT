@@ -13,9 +13,14 @@ public class ChtSerializer
     public string Indentation { get; set; } = "  ";
 
     /// <summary>
-    /// 0 = no single line nesting, null = unlimited nesting of function nodes
+    /// 0 = () are only used for empty Nonterminals, 1 = () are used as long as they don't contain any ()
     /// </summary>
-    public int? MaximumDepth = 2;
+    public int? MaximumParenthesesDepth = 1;
+
+    /// <summary>
+    /// true = children in () may precede indented children, false = either all children are inside () or all children are indented
+    /// </summary>
+    public bool UseCombinedNodes = true;
 
     /// <summary>
     /// true = rest of line nodes are used as direct children on blocks, false = rest of line nodes are never used
@@ -42,8 +47,9 @@ public class ChtSerializer
     public ChtSerializer(ChtSerializer chtSerializer)
     {
         Indentation = chtSerializer.Indentation;
-        MaximumDepth = chtSerializer.MaximumDepth;
+        MaximumParenthesesDepth = chtSerializer.MaximumParenthesesDepth;
         UseRestOfLineNodes = chtSerializer.UseRestOfLineNodes;
+        UseCombinedNodes = chtSerializer.UseCombinedNodes;
         Mappers = [.. chtSerializer.Mappers];
     }
 
@@ -161,10 +167,7 @@ public class ChtSerializer
             var depth = 0;
             if (node is ChtNonterminal nonterminal)
             {
-                foreach (var child in nonterminal.Children)
-                {
-                    depth = Math.Max(depth, 1 + calcDepth(child));
-                }
+                depth = 1 + nonterminal.Children.Max(calcDepth);
             }
             depths[node] = depth;
             return depth;
@@ -185,19 +188,7 @@ public class ChtSerializer
                     else
                     {
                         var depth = depths[node];
-                        if (MaximumDepth < depth) {
-                            builder.Append(nonterminal.Type).Append(":");
-                            foreach (var child in nonterminal.Children)
-                            {
-                                builder.AppendLine();
-                                for (int i = 0; i <= indentationLevel; i++)
-                                {
-                                    builder.Append(Indentation);
-                                }
-                                Append(child, indentationLevel + 1, 0);
-                            }
-                        }
-                        else if (lineNestingLevel == 0 && UseRestOfLineNodes)
+                        if (lineNestingLevel == 0 && UseRestOfLineNodes && (MaximumParenthesesDepth is null || depth - 1 <= MaximumParenthesesDepth))
                         {
                             builder.Append(nonterminal.Type).Append(":");
                             foreach (var child in nonterminal.Children)
@@ -206,10 +197,10 @@ public class ChtSerializer
                                 Append(child, indentationLevel, lineNestingLevel + 1);
                             }
                         }
-                        else
+                        else if (MaximumParenthesesDepth is null || depth <= MaximumParenthesesDepth)
                         {
                             builder.Append(nonterminal.Type).Append("(");
-                            Append(nonterminal.Children[0], indentationLevel, lineNestingLevel+1);
+                            Append(nonterminal.Children[0], indentationLevel, lineNestingLevel + 1);
                             foreach (var child in nonterminal.Children.Skip(1))
                             {
                                 builder.Append(" ");
@@ -217,7 +208,45 @@ public class ChtSerializer
                             }
                             builder.Append(")");
                         }
-                        
+                        else
+                        {
+                            builder.Append(nonterminal.Type);
+                            var emitedInlineChildren = false;
+                            var emitedIndentation = false;
+                            foreach (var child in nonterminal.Children)
+                            {
+                                var childDepth = depths[child];
+                                if (!emitedIndentation && UseCombinedNodes && (MaximumParenthesesDepth is null || childDepth + 1 <= MaximumParenthesesDepth))
+                                {
+                                    if (!emitedInlineChildren)
+                                    {
+                                        builder.Append("(");
+                                        Append(child, indentationLevel, lineNestingLevel + 1);
+                                        emitedInlineChildren = true;
+                                    }
+                                    else
+                                    {
+                                        builder.Append(" ");
+                                        Append(child, indentationLevel, lineNestingLevel + 1);
+                                    }
+                                }
+                                else
+                                {
+                                    if (!emitedIndentation)
+                                    {
+                                        if (emitedInlineChildren) builder.Append(")");
+                                        builder.Append(":");
+                                    }
+                                    builder.AppendLine();
+                                    for (int i = 0; i <= indentationLevel; i++)
+                                    {
+                                        builder.Append(Indentation);
+                                    }
+                                    Append(child, indentationLevel + 1, 0);
+                                    emitedIndentation = true;
+                                }                                
+                            }
+                        }                        
                     }
                         break;
                 case ChtTerminal terminal:

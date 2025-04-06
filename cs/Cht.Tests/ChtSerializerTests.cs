@@ -9,9 +9,23 @@ public class ChtSerializerTests
     public async Task Emit_Emits(ChtSerializer serializer, string expectedOutput)
     {
         var node = new ChtNonterminal(
-            "Block",           
+            "Block",
             new ChtNonterminal(
-                "Assignment",                
+                "Assignment",
+                ChtTerminal.JustRaw("$x"),
+                new ChtNonterminal(
+                    "List",
+                    new ChtNonterminal(
+                        "List",
+                        ChtTerminal.JustRaw("0"),
+                        ChtTerminal.JustRaw("1")
+                    ),
+                    ChtTerminal.JustRaw("58"),
+                    ChtTerminal.JustRaw("15")
+                )
+            ),
+            new ChtNonterminal(
+                "Assignment",
                 ChtTerminal.JustRaw("$x"),
                 new ChtNonterminal(
                     "List",
@@ -53,29 +67,55 @@ public class ChtSerializerTests
 
     public static IEnumerable<Func<(ChtSerializer, string)>> Emit_Emits_Data() => [
             () => (new ChtSerializer(),"""
-        Block:
-          Assignment: $x List(0 58 15)
-          MethodCall: $x $append 7
-          Assignment: $y Indexing($x 3)
-          FunctionCall: $print $y
-          Assignment: $text "Some text with spaces"
-        """),
-            () => (new ChtSerializer { Indentation = "    ", UseRestOfLineNodes = false }, """
-        Block:
-            Assignment($x List(0 58 15))
-            MethodCall($x $append 7)
-            Assignment($y Indexing($x 3))
-            FunctionCall($print $y)
-            Assignment($text "Some text with spaces")
-        """),
-            () => (new ChtSerializer { Indentation = "    ", UseRestOfLineNodes = false, MaximumDepth = null }, """Block(Assignment($x List(0 58 15)) MethodCall($x $append 7) Assignment($y Indexing($x 3)) FunctionCall($print $y) Assignment($text "Some text with spaces"))""")
+                Block:
+                  Assignment($x):
+                    List: List(0 1) 58 15
+                  Assignment: $x List(0 58 15)
+                  MethodCall: $x $append 7
+                  Assignment: $y Indexing($x 3)
+                  FunctionCall: $print $y
+                  Assignment: $text "Some text with spaces"
+                """),
+            () => (new ChtSerializer { UseCombinedNodes = false },"""
+                Block:
+                  Assignment:
+                    $x
+                    List: List(0 1) 58 15
+                  Assignment: $x List(0 58 15)
+                  MethodCall: $x $append 7
+                  Assignment: $y Indexing($x 3)
+                  FunctionCall: $print $y
+                  Assignment: $text "Some text with spaces"
+                """),
+            () => (new ChtSerializer { Indentation = "    ", UseRestOfLineNodes = false, MaximumParenthesesDepth = 2 }, """
+                Block:
+                    Assignment($x):
+                        List(List(0 1) 58 15)
+                    Assignment($x List(0 58 15))
+                    MethodCall($x $append 7)
+                    Assignment($y Indexing($x 3))
+                    FunctionCall($print $y)
+                    Assignment($text "Some text with spaces")
+                """),
+            () => (new ChtSerializer { Indentation = "    ", UseRestOfLineNodes = false, MaximumParenthesesDepth = 2, UseCombinedNodes = false }, """
+                Block:
+                    Assignment:
+                        $x
+                        List(List(0 1) 58 15)
+                    Assignment($x List(0 58 15))
+                    MethodCall($x $append 7)
+                    Assignment($y Indexing($x 3))
+                    FunctionCall($print $y)
+                    Assignment($text "Some text with spaces")
+                """),
+            () => (new ChtSerializer { Indentation = "    ", UseRestOfLineNodes = false, MaximumParenthesesDepth = null }, """Block(Assignment($x List(List(0 1) 58 15)) Assignment($x List(0 58 15)) MethodCall($x $append 7) Assignment($y Indexing($x 3)) FunctionCall($print $y) Assignment($text "Some text with spaces"))""")
         ];
 
     [Test]
     [MethodDataSource(nameof(Parse_WhenValidSource_Parses_Data))]
     public async Task Parse_WhenValidSource_Parses(string source, ChtNode expectedNode)
     {
-        var serializer = new ChtSerializer();        
+        var serializer = new ChtSerializer();
         var actualNode = serializer.Parse(source);
         await Assert.That(actualNode).IsEquivalentTo(expectedNode);
     }
@@ -107,7 +147,9 @@ public class ChtSerializerTests
         () => ("A(B(C()))", new ChtNonterminal("A", new ChtNonterminal("B", new ChtNonterminal("C")))),
         () => ("A:B:C()", new ChtNonterminal("A", new ChtNonterminal("B", new ChtNonterminal("C")))),
         () => ("A:\n  B:\n    C()", new ChtNonterminal("A", new ChtNonterminal("B", new ChtNonterminal("C")))),
+        () => ("A(0):\n  B:\n    C()", new ChtNonterminal("A", ChtTerminal.JustRaw("0"), new ChtNonterminal("B", new ChtNonterminal("C")))),
         () => ("A(B:C())", new ChtNonterminal("A", new ChtNonterminal("B", new ChtNonterminal("C")))),
+        () => ("A(B(0):C())", new ChtNonterminal("A", new ChtNonterminal("B", ChtTerminal.JustRaw("0"), new ChtNonterminal("C")))),
         () => ("A:  59  \t$x    []    ", new ChtNonterminal("A", ChtTerminal.JustRaw("59"), ChtTerminal.JustRaw("$x"), ChtTerminal.JustRaw("[]"))),
     ];
 
@@ -115,7 +157,6 @@ public class ChtSerializerTests
         () => (" 58", new ChtParsingException(1, 1, "")),
         () => ("A:", new ChtParsingException(1, 3, "")),
         () => ("A()\n  B()", new ChtParsingException(1, 4, "")),
-        () => ("A():\n  B()", new ChtParsingException(1, 4, "")),
         () => ("a()", new ChtParsingException(1, 2, "")),
         () => ("A(B:C)", new ChtParsingException(1, 6, "")),
         () => ("A:\n    B:\n  C()", new ChtParsingException(2, 7, "")),

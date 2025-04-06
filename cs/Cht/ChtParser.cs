@@ -40,11 +40,11 @@ internal static class ChtParser
         var (result, isRestOfLineNode) = ReadInlineNode();
         if (result is null) Throw("Expected node");
 
-        if (result is ChtNonterminal nonterminal && isRestOfLineNode && !nonterminal.Children.Any())
+        if (result is ChtNonterminal nonterminal && isRestOfLineNode)
         {
-            if (!line.Children.Any())
-                Throw("Unexpected empty rest of line nonterminal. Empty nonterminals must use the `Type()` syntax.");
-            nonterminal.Children = line.Children.Select(Parse).ToList();
+            nonterminal.Children.AddRange(line.Children.Select(Parse));
+            if (!nonterminal.Children.Any())
+                Throw("Unexpected empty rest of line nonterminal. \":\" must be followed by at least one child.");
         }
         else if (line.Children.Any()) Throw($"Unexpected indentation on the following line.");
 
@@ -84,6 +84,12 @@ internal static class ChtParser
                     if (PeekChar() == ')')
                     {
                         pointer++;
+                        if (PeekChar() == ':')
+                        {
+                            pointer++;
+                            resultNonterminal.Children.AddRange(ReadInlineNodes());
+                            return (resultNonterminal, true);
+                        }
                         return (resultNonterminal, false);
                     }
                     Throw("Expected node or ')'");
