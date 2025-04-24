@@ -63,6 +63,11 @@ internal static class ChtParser
         {
             while (PeekChar() != '\n' && char.IsWhiteSpace(PeekChar())) pointer++;
             if (PeekChar() == '\n') return (null, false);
+            if (PeekChar() == '#' && pointer + 1 < line.Content.Length && char.IsWhiteSpace(line.Content[pointer + 1]))
+            {
+                pointer = line.Content.Length - 1;
+                return (null, false); // Comment
+            }
 
             var nodeStart = pointer;
             if (char.IsUpper(line.Content[pointer]))

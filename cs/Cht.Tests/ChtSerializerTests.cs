@@ -143,6 +143,7 @@ public class ChtSerializerTests
         () => ("$x", ChtTerminal.JustRaw("$x")),
         () => ("12:34:56", ChtTerminal.JustRaw("12:34:56")),
         () => ("\"Some\\n\\\"text\"", ChtTerminal.JustQuoted("Some\n\"text")),
+        () => ("A: #0 1 \"2 # \"# 3 #4", new ChtNonterminal("A", ChtTerminal.JustRaw("#0"), ChtTerminal.JustRaw("1"), ChtTerminal.JustQuoted("2 # "))),
         () => ("re\"quoted\"", new ChtTerminal { Raw = "re", Quoted = "quoted"}),
         () => ("A(B(C()))", new ChtNonterminal("A", new ChtNonterminal("B", new ChtNonterminal("C")))),
         () => ("A:B:C()", new ChtNonterminal("A", new ChtNonterminal("B", new ChtNonterminal("C")))),

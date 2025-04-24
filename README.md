@@ -91,7 +91,10 @@ CHT is whitespace sensitive. The entire document can be a single line, using par
 CHT is an indentation sensitive format. The indentation of each line is the sequence of white space characters up to the first nonwhitespace. The indentation of each line must either stay the same (be exactly the same as the previous line), increase (the previous line is a prefix of the current line), or decrease (be a prefix of a previous line which has occured before). The first line must start at a zero indentation.
 
 #### Special characters
-Whitespace characters including a space ` `, tab, newline and others, a colon `:`, a quotation mark `"` and parentheses `()` have special meanings in CHT. Other characters can be used freely.
+Whitespace characters including a space ` `, tab, newline and others, a number sign `#`, a colon `:`, a quotation mark `"` and parentheses `()` have special meanings in CHT. Other characters can be used freely.
+
+#### Comments
+The rest of the line following `# ` (any whitespace) is ignored.
 
 #### Terminal node
 A concatenation of a raw and quoted parts. One of the parts may be missing. The raw part is a piece of text that does not start with a capital letter and does not contain a special character. Colons `:` can be present as long as they have digits on both sides.
