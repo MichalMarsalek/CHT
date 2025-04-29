@@ -1,0 +1,51 @@
+{
+  "name": "cht",
+  "scopeName": "source.cht",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#nonterminal" },
+    { "include": "#quoted" },
+    { "include": "#raw" }
+  ],
+  "repository": {
+    "comment": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.cht",
+          "match": "# .*$"
+        }
+      ]
+    },
+    "quoted": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.cht",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            { "name": "constant.character.escape.cht", "match": "\\\\." }
+          ]
+        }
+      ]
+    },
+    "raw": {
+      "patterns": [
+        {
+          "name": "string.quoted.single.cht",
+          "match": "(?:\\d+:\\d+|[^\\s\"():A-Z][^\\s\"():]*)"
+        }
+      ]
+    },
+    "nonterminal": {
+      "patterns": [
+        {
+          "name": "entity.name.type.nonterminal.cht",
+          "match": "\\b[A-Z][^\\s#():\"]*\\b"
+        },
+        { "name": "punctuation.group.parens.begin.cht", "match": "\\(" },
+        { "name": "punctuation.group.parens.end.cht", "match": "\\)" },
+        { "name": "punctuation.separator.children-colon.cht", "match": ":" }
+      ]
+    }
+  }
+}
