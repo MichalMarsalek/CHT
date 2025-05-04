@@ -222,15 +222,15 @@ public class ChtMappersTests
     public async Task EnumMapper_DefinesInverseFunctions()
     {
         var type = typeof(TestEnum);
-        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.UntypedRawName), TestEnum.Variant1, ChtTerminal.JustRaw("variant1"), type);
-        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.UntypedQuotedName), TestEnum.Variant1, ChtTerminal.JustQuoted("Variant1"), type);
-        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.UntypedOrdinal), TestEnum.Variant1, ChtTerminal.JustRaw("1"), type);
-        await Mapper_DefinesInverseFunctions(new EnumMapper([type], EnumMappingStyle.TypedRawName), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("variant1")));
-        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.TypedRawName), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("variant1")), type);
-        await Mapper_DefinesInverseFunctions(new EnumMapper([type], EnumMappingStyle.TypedQuotedName), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustQuoted("Variant1")));
-        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.TypedQuotedName), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustQuoted("Variant1")), type);
-        await Mapper_DefinesInverseFunctions(new EnumMapper([type], EnumMappingStyle.TypedOrdinal), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("1")));
-        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.TypedOrdinal), TestEnum.Variant1, new ChtNonterminal("Enum", ChtTerminal.JustRaw("1")), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.UntypedRawName), TestEnum.Flag1 | TestEnum.Flag2, ChtTerminal.JustRaw("flag1|flag2"), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.UntypedQuotedName), TestEnum.Flag1 | TestEnum.Flag2, ChtTerminal.JustQuoted("Flag1|Flag2"), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.UntypedOrdinal), TestEnum.Flag1 | TestEnum.Flag2, ChtTerminal.JustRaw("3"), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([type], EnumMappingStyle.TypedRawName), TestEnum.Flag1 | TestEnum.Flag2, new ChtNonterminal("Enum", ChtTerminal.JustRaw("flag1|flag2")));
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.TypedRawName), TestEnum.Flag1 | TestEnum.Flag2, new ChtNonterminal("Enum", ChtTerminal.JustRaw("flag1|flag2")), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([type], EnumMappingStyle.TypedQuotedName), TestEnum.Flag1 | TestEnum.Flag2, new ChtNonterminal("Enum", ChtTerminal.JustQuoted("Flag1|Flag2")));
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.TypedQuotedName), TestEnum.Flag1 | TestEnum.Flag2, new ChtNonterminal("Enum", ChtTerminal.JustQuoted("Flag1|Flag2")), type);
+        await Mapper_DefinesInverseFunctions(new EnumMapper([type], EnumMappingStyle.TypedOrdinal), TestEnum.Flag1 | TestEnum.Flag2, new ChtNonterminal("Enum", ChtTerminal.JustRaw("3")));
+        await Mapper_DefinesInverseFunctions(new EnumMapper([], EnumMappingStyle.TypedOrdinal), TestEnum.Flag1 | TestEnum.Flag2, new ChtNonterminal("Enum", ChtTerminal.JustRaw("3")), type);
     }
 
     [Test]
@@ -279,10 +279,11 @@ public class ChtMappersTests
     }
 
     [ChtType("Enum")]
+    [Flags]
     public enum TestEnum
     {
-        Variant1 = 1,
-        Variant2 = 2
+        Flag1 = 1,
+        Flag2 = 2
     }
 
     public class TestObjectWithDictionary

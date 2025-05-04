@@ -18,11 +18,11 @@ public class EnumMapper(IEnumerable<Type> enumTypes, EnumMappingStyle style) : I
         {
             if (nonterminal.Children.Count == 1 && nonterminal.Children[0] is ChtTerminal valueNode)
             {
-                if (valueNode.IsJustQuoted && Enum.TryParse(type, valueNode.Quoted, out output))
+                if (valueNode.IsJustQuoted && Enum.TryParse(type, valueNode.Quoted.Replace("|", ", "), out output))
                 {
                     return true;
                 }
-                if (valueNode.IsJustRaw && Enum.TryParse(type, char.ToUpper(valueNode.Raw[0]) + valueNode.Raw[1..], out output))
+                if (valueNode.IsJustRaw && Enum.TryParse(type, string.Join(", ", valueNode.Raw.Split("|").Select(x => char.ToUpper(x[0]) + x[1..])), out output))
                 {
                     return true;
                 }
@@ -31,11 +31,11 @@ public class EnumMapper(IEnumerable<Type> enumTypes, EnumMappingStyle style) : I
         }
         if (node is ChtTerminal terminal)
         {
-            if (terminal.IsJustQuoted && Enum.TryParse(type, terminal.Quoted, out output))
+            if (terminal.IsJustQuoted && Enum.TryParse(type, terminal.Quoted.Replace("|", ", "), out output))
             {
                 return true;
             }
-            if (terminal.IsJustRaw && Enum.TryParse(type, char.ToUpper(terminal.Raw[0]) + terminal.Raw[1..], out output))
+            if (terminal.IsJustRaw && Enum.TryParse(type, string.Join(", ", terminal.Raw.Split("|").Select(x => char.ToUpper(x[0]) + x[1..])), out output))
             {
                 return true;
             }
@@ -53,11 +53,14 @@ public class EnumMapper(IEnumerable<Type> enumTypes, EnumMappingStyle style) : I
         if (value is Enum enumValue)
         {
             var type = value.GetType();
-            var valueName = Enum.GetName(type, enumValue);
+            var valueName = enumValue.ToString();
+            if (_style is not EnumMappingStyle.UntypedOrdinal or EnumMappingStyle.TypedOrdinal && int.TryParse(valueName, out var _)) {
+                throw new ChtMappingException(this, $"Enum value could not be serialized to {_style}. For flag enums, make sure the enum has the [Flags] attribute. For serializing unnamed enum values, use EnumMappingStyle.TypedOrdinal or EnumMappingStyle.UntypedOrdinal.");
+            }
             var innerNode = _style switch
             {
-                EnumMappingStyle.UntypedRawName or EnumMappingStyle.TypedRawName => ChtTerminal.JustRaw(char.ToLower(valueName[0]) + valueName[1..]),
-                EnumMappingStyle.UntypedQuotedName or EnumMappingStyle.TypedQuotedName => ChtTerminal.JustQuoted(valueName),
+                EnumMappingStyle.UntypedRawName or EnumMappingStyle.TypedRawName => ChtTerminal.JustRaw(string.Join("|", valueName.Split(", ").Select(x => char.ToLower(x[0]) + x[1..]))),
+                EnumMappingStyle.UntypedQuotedName or EnumMappingStyle.TypedQuotedName => ChtTerminal.JustQuoted(valueName.Replace(", ", "|")),
                 EnumMappingStyle.UntypedOrdinal or EnumMappingStyle.TypedOrdinal => ChtTerminal.JustRaw(((int)(object)enumValue).ToString()),
                 _ => throw new ArgumentException("Invalid enum mapping style.")
             };
