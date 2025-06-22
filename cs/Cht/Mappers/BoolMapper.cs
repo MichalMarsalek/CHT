@@ -5,9 +5,9 @@ public class BoolMapper : ChtMapper<bool>
     public override bool FromNode(ChtNode node, ChtSerializer serializer, out bool output)
     {
         output = default;
-        if (node is ChtTerminal terminal && terminal.Quoted is null && (terminal.Raw == "true" || terminal.Raw == "false"))
+        if (node.Quoted is null && (node.Raw == "true" || node.Raw == "false"))
         {
-            output = terminal.Raw == "true";
+            output = node.Raw == "true";
             return true;
         }
         return false;
@@ -15,7 +15,7 @@ public class BoolMapper : ChtMapper<bool>
 
     public override bool ToNode(bool value, ChtSerializer serializer, out ChtNode output)
     {
-        output = ChtTerminal.JustRaw(value.ToString().ToLower());
+        output = new ChtNode(value.ToString().ToLower(), null);
         return true;
     }
 }

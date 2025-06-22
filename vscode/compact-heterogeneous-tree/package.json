@@ -2,7 +2,7 @@
   "name": "compact-heterogeneous-tree",
   "displayName": "Compact heterogeneous tree",
   "description": "Format & syntax highlight *.cht files",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MichalMarsalek/CHT.git"

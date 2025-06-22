@@ -5,7 +5,7 @@ public class NullMapper : IChtMapper
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
         output = null;
-        return node is ChtTerminal terminal && terminal.IsJustRaw && terminal.Raw == "null";
+        return node.IsJustRaw && node.Raw == "null";
     }
 
     public bool ToNode(object? value, ChtSerializer serializer, out ChtNode output)
@@ -13,7 +13,7 @@ public class NullMapper : IChtMapper
         output = default;
         if (value is null)
         {
-            output = ChtTerminal.JustRaw("null");
+            output = new ChtNode("null", null);
             return true;
         }
         return false;

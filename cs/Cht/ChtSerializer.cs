@@ -101,7 +101,7 @@ public class ChtSerializer
     /// <param name="node">Node to map.</param>
     /// <returns>The resulting mapped value.</returns>
     public T FromNode<T>(ChtNode node)
-        => (T)FromNode(node, typeof(T));
+        => (T)FromNode(node, typeof(T))!;
 
     /// <summary>
     /// Converts a CHT node to a .NET object.
@@ -125,7 +125,7 @@ public class ChtSerializer
                 throw new ChtMappingException(mapper, ex);
             }
         }
-        throw new ChtMappingException(null, $"No mapper able to handle node {(node is ChtTerminal terminal ? terminal.ToString() : node is ChtNonterminal nonterminal ? nonterminal.Type + "(...)" : '?')}");
+        throw new ChtMappingException(null, $"No mapper able to handle node {node}.");
     }
 
     /// <summary>
@@ -165,9 +165,9 @@ public class ChtSerializer
         int calcDepth(ChtNode node)
         {
             var depth = 0;
-            if (node is ChtNonterminal nonterminal)
+            if (node.Children != null)
             {
-                depth = 1 + nonterminal.Children.Max(calcDepth);
+                depth = 1 + node.Children.Max(calcDepth);
             }
             depths[node] = depth;
             return depth;
@@ -177,84 +177,74 @@ public class ChtSerializer
 
         void Append(ChtNode node, int indentationLevel, int lineNestingLevel)
         {
-            switch (node)
+            
+            builder.Append(node.ValueToString());
+            if (node.Children is null) return;
+            if (node.Children.Count == 0)
             {
-                case ChtNonterminal nonterminal:
-                    if (!nonterminal.Children.Any())
+                builder.Append("()");
+                return;
+            }
+            var depth = depths[node];
+            if (lineNestingLevel == 0 && UseRestOfLineNodes && (MaximumParenthesesDepth is null || depth - 1 <= MaximumParenthesesDepth))
+            {
+                builder.Append(":");
+                foreach (var child in node.Children)
+                {
+                    builder.Append(" ");
+                    Append(child, indentationLevel, lineNestingLevel + 1);
+                }
+            }
+            else if (MaximumParenthesesDepth is null || depth <= MaximumParenthesesDepth)
+            {
+                builder.Append("(");
+                Append(node.Children[0], indentationLevel, lineNestingLevel + 1);
+                foreach (var child in node.Children.Skip(1))
+                {
+                    builder.Append(" ");
+                    Append(child, indentationLevel, lineNestingLevel + 1);
+                }
+                builder.Append(")");
+            }
+            else
+            {
+                var emitedInlineChildren = false;
+                var emitedIndentation = false;
+                foreach (var child in node.Children)
+                {
+                    var childDepth = depths[child];
+                    if (!emitedIndentation && UseCombinedNodes && (MaximumParenthesesDepth is null || childDepth + 1 <= MaximumParenthesesDepth))
                     {
-                        builder.Append(nonterminal.Type).Append("()");
-                        break;
-                    }
-                    else
-                    {
-                        var depth = depths[node];
-                        if (lineNestingLevel == 0 && UseRestOfLineNodes && (MaximumParenthesesDepth is null || depth - 1 <= MaximumParenthesesDepth))
+                        if (!emitedInlineChildren)
                         {
-                            builder.Append(nonterminal.Type).Append(":");
-                            foreach (var child in nonterminal.Children)
-                            {
-                                builder.Append(" ");
-                                Append(child, indentationLevel, lineNestingLevel + 1);
-                            }
-                        }
-                        else if (MaximumParenthesesDepth is null || depth <= MaximumParenthesesDepth)
-                        {
-                            builder.Append(nonterminal.Type).Append("(");
-                            Append(nonterminal.Children[0], indentationLevel, lineNestingLevel + 1);
-                            foreach (var child in nonterminal.Children.Skip(1))
-                            {
-                                builder.Append(" ");
-                                Append(child, indentationLevel, lineNestingLevel + 1);
-                            }
-                            builder.Append(")");
+                            builder.Append("(");
+                            Append(child, indentationLevel, lineNestingLevel + 1);
+                            emitedInlineChildren = true;
                         }
                         else
                         {
-                            builder.Append(nonterminal.Type);
-                            var emitedInlineChildren = false;
-                            var emitedIndentation = false;
-                            foreach (var child in nonterminal.Children)
-                            {
-                                var childDepth = depths[child];
-                                if (!emitedIndentation && UseCombinedNodes && (MaximumParenthesesDepth is null || childDepth + 1 <= MaximumParenthesesDepth))
-                                {
-                                    if (!emitedInlineChildren)
-                                    {
-                                        builder.Append("(");
-                                        Append(child, indentationLevel, lineNestingLevel + 1);
-                                        emitedInlineChildren = true;
-                                    }
-                                    else
-                                    {
-                                        builder.Append(" ");
-                                        Append(child, indentationLevel, lineNestingLevel + 1);
-                                    }
-                                }
-                                else
-                                {
-                                    if (!emitedIndentation)
-                                    {
-                                        if (emitedInlineChildren) builder.Append(")");
-                                        builder.Append(":");
-                                    }
-                                    builder.AppendLine();
-                                    for (int i = 0; i <= indentationLevel; i++)
-                                    {
-                                        builder.Append(Indentation);
-                                    }
-                                    Append(child, indentationLevel + 1, 0);
-                                    emitedIndentation = true;
-                                }                                
-                            }
-                        }                        
+                            builder.Append(" ");
+                            Append(child, indentationLevel, lineNestingLevel + 1);
+                        }
                     }
-                        break;
-                case ChtTerminal terminal:
-                    builder.Append(terminal.ToString());
-                    break;
-                default:
-                    throw new ArgumentException($"Unknown node type {node.GetType().Name}.");
+                    else
+                    {
+                        if (!emitedIndentation)
+                        {
+                            if (emitedInlineChildren) builder.Append(")");
+                            builder.Append(":");
+                        }
+                        builder.AppendLine();
+                        for (int i = 0; i <= indentationLevel; i++)
+                        {
+                            builder.Append(Indentation);
+                        }
+                        Append(child, indentationLevel + 1, 0);
+                        emitedIndentation = true;
+                    }
+                }
             }
+            
         }
         Append(node, 0, 0);
         return builder.ToString();

@@ -10,12 +10,12 @@ public class ObjectMapper(IEnumerable<Type> types, bool skipTrailingNulls = true
 
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
-        if (node is ChtNonterminal nonterminal)
+        if (node.IsRawWithChildren)
         {
-            var type = Unify(targetType, nonterminal.Type);
+            var type = Unify(targetType, node.Raw);
             if (type is not null)
             {
-                output = FromNode(nonterminal, type, serializer);
+                output = FromNode(node, type, serializer);
                 return true;
             }
         }
@@ -38,8 +38,9 @@ public class ObjectMapper(IEnumerable<Type> types, bool skipTrailingNulls = true
         {
             props = props.Reverse().SkipWhile(x => x.Value is null).Reverse();
         }
-        output = new ChtNonterminal(
+        output = new ChtNode(
             GetTypeName(type),
+            null,
             props.SelectMany(prop =>
             {
                 var propType = prop.Property.PropertyType;
@@ -80,7 +81,7 @@ public class ObjectMapper(IEnumerable<Type> types, bool skipTrailingNulls = true
     private static string GetTypeName(Type type)
         => type.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? type.Name.Split("`")[0];
 
-    private object? FromNode(ChtNonterminal node, Type type, ChtSerializer serializer)
+    private object? FromNode(ChtNode node, Type type, ChtSerializer serializer)
     {
         var props = type.GetProperties().Where(x => x.CanWrite && x.GetCustomAttribute<ChtIgnoreAttribute>() is null)
             .Select(x => {

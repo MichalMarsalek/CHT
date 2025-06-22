@@ -8,56 +8,56 @@ public class ChtSerializerTests
     [MethodDataSource(nameof(Emit_Emits_Data))]
     public async Task Emit_Emits(ChtSerializer serializer, string expectedOutput)
     {
-        var node = new ChtNonterminal(
+        var node = Raw(
             "Block",
-            new ChtNonterminal(
+            Raw(
                 "Assignment",
-                ChtTerminal.JustRaw("$x"),
-                new ChtNonterminal(
+                new ChtNode("$x", null),
+                Raw(
                     "List",
-                    new ChtNonterminal(
+                    Raw(
                         "List",
-                        ChtTerminal.JustRaw("0"),
-                        ChtTerminal.JustRaw("1")
+                        Raw(0),
+                        Raw(1)
                     ),
-                    ChtTerminal.JustRaw("58"),
-                    ChtTerminal.JustRaw("15")
+                    Raw(58),
+                    Raw(15)
                 )
             ),
-            new ChtNonterminal(
+            Raw(
                 "Assignment",
-                ChtTerminal.JustRaw("$x"),
-                new ChtNonterminal(
+                Raw("$x"),
+                Raw(
                     "List",
-                    ChtTerminal.JustRaw("0"),
-                    ChtTerminal.JustRaw("58"),
-                    ChtTerminal.JustRaw("15")
+                    Raw(0),
+                    Raw(58),
+                    Raw(15)
                 )
             ),
-            new ChtNonterminal(
+            Raw(
                 "MethodCall",
-                ChtTerminal.JustRaw("$x"),
-                ChtTerminal.JustRaw("$append"),
-                ChtTerminal.JustRaw("7")
+                Raw("$x"),
+                Raw("$append"),
+                Raw(7)
             ),
-            new ChtNonterminal(
+            Raw(
                 "Assignment",
-                ChtTerminal.JustRaw("$y"),
-                new ChtNonterminal(
+                Raw("$y"),
+                Raw(
                     "Indexing",
-                    ChtTerminal.JustRaw("$x"),
-                    ChtTerminal.JustRaw("3")
+                    Raw("$x"),
+                    Raw(3)
                 )
             ),
-            new ChtNonterminal(
+            Raw(
                 "FunctionCall",
-                ChtTerminal.JustRaw("$print"),
-                ChtTerminal.JustRaw("$y")
+                Raw("$print"),
+                Raw("$y")
             ),
-            new ChtNonterminal(
+            Raw(
                 "Assignment",
-                ChtTerminal.JustRaw("$text"),
-                ChtTerminal.JustQuoted("Some text with spaces")
+                Raw("$text"),
+                Quoted("Some text with spaces")
             )
         );
 
@@ -139,27 +139,30 @@ public class ChtSerializerTests
     }
 
     public static IEnumerable<Func<(string, ChtNode)>> Parse_WhenValidSource_Parses_Data() => [
-        () => ("58", ChtTerminal.JustRaw("58")),
-        () => ("$x", ChtTerminal.JustRaw("$x")),
-        () => ("12:34:56", ChtTerminal.JustRaw("12:34:56")),
-        () => ("\"Some\\n\\\"text\"", ChtTerminal.JustQuoted("Some\n\"text")),
-        () => ("A: #0 1 \"2 # \"# 3 #4", new ChtNonterminal("A", ChtTerminal.JustRaw("#0"), ChtTerminal.JustRaw("1"), ChtTerminal.JustQuoted("2 # "))),
-        () => ("re\"quoted\"", new ChtTerminal { Raw = "re", Quoted = "quoted"}),
-        () => ("A(B(C()))", new ChtNonterminal("A", new ChtNonterminal("B", new ChtNonterminal("C")))),
-        () => ("A:B:C()", new ChtNonterminal("A", new ChtNonterminal("B", new ChtNonterminal("C")))),
-        () => ("A:\n  B:\n    C()", new ChtNonterminal("A", new ChtNonterminal("B", new ChtNonterminal("C")))),
-        () => ("A(0):\n  B:\n    C()", new ChtNonterminal("A", ChtTerminal.JustRaw("0"), new ChtNonterminal("B", new ChtNonterminal("C")))),
-        () => ("A(B:C())", new ChtNonterminal("A", new ChtNonterminal("B", new ChtNonterminal("C")))),
-        () => ("A(B(0):C())", new ChtNonterminal("A", new ChtNonterminal("B", ChtTerminal.JustRaw("0"), new ChtNonterminal("C")))),
-        () => ("A:  59  \t$x    []    ", new ChtNonterminal("A", ChtTerminal.JustRaw("59"), ChtTerminal.JustRaw("$x"), ChtTerminal.JustRaw("[]"))),
+        () => ("58", Raw(58)),
+        () => ("$x", Raw("$x")),
+        () => ("12:34:56", Raw("12:34:56")),
+        () => ("\"Some\\n\\\"text\"", Quoted("Some\n\"text")),
+        () => ("A: #0 1 \"2 # \"# 3 #4", Raw("A", Raw("#0"), Raw(1), Quoted("2 # "))),
+        () => ("re\"quoted\"", new ChtNode("re", "quoted")),
+        () => ("A(B(C()))", Raw("A", Raw("B", Raw("C", [])))),
+        () => ("A:B:C()", Raw("A", Raw("B", Raw("C", [])))),
+        () => ("A:\n  B:\n    C()", Raw("A", Raw("B", Raw("C", [])))),
+        () => ("A(0):\n  B:\n    C()", Raw("A", Raw(0), Raw("B", Raw("C", [])))),
+        () => ("A(B:C())", Raw("A", Raw("B", Raw("C", [])))),
+        () => ("A(B(0):C())", Raw("A", Raw("B", Raw(0), Raw("C", [])))),
+        () => ("A:  59  \t$x    []    ", Raw("A", Raw(59), Raw("$x"), Raw("[]"))),
+        () => ("a()", Raw("a", [])),
+        () => ("a\"quoted\"()", new ChtNode("a", "quoted", [])),
+        () => ("A(B:C)", Raw("A", Raw("B", Raw("C")))),
+        () => ("A(0)(1):2 3", Raw("A", Raw(0), Raw(1), Raw(2), Raw(3))),
+        () => ("A(0)(1):\n 2\n 3", Raw("A", Raw(0), Raw(1), Raw(2), Raw(3))),
     ];
 
     public static IEnumerable<Func<(string, ChtParsingException)>> Parse_WhenInvalidSource_Throws_Data() => [
         () => (" 58", new ChtParsingException(1, 1, "")),
         () => ("A:", new ChtParsingException(1, 3, "")),
         () => ("A()\n  B()", new ChtParsingException(1, 4, "")),
-        () => ("a()", new ChtParsingException(1, 2, "")),
-        () => ("A(B:C)", new ChtParsingException(1, 6, "")),
         () => ("A:\n    B:\n  C()", new ChtParsingException(2, 7, "")),
     ];
 
@@ -172,6 +175,10 @@ public class ChtSerializerTests
         await Assert.That(() => serializer.ToNode(node)).Throws<ChtMappingException>().WithMessage("Circular reference detected.");
     }
 
+    private static ChtNode Raw(object? raw) => new ChtNode(raw?.ToString(), null, null);
+    private static ChtNode Raw(object? raw, params ChtNode[] children) => new ChtNode(raw?.ToString(), null, children);
+    private static ChtNode Quoted(string? quoted) => new ChtNode(null, quoted, null);
+
     private class TestNode
     {
         public TestNode? Parent { get; set; }
@@ -181,7 +188,7 @@ public class ChtSerializerTests
     {
         public override bool ToNode(TestNode value, ChtSerializer serializer, out ChtNode output)
         {
-            output = new ChtNonterminal("TestNode", serializer.ToNode(value.Parent));
+            output = Raw("TestNode", serializer.ToNode(value.Parent));
             return true;
         }
 

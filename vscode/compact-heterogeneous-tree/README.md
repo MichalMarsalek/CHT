@@ -4,6 +4,10 @@ Formatter and syntax highlighter for [CHT - Compact heterogeneous tree - A compa
 
 ## Release Notes
 
-### 1.0.0
+### 0.0.1
 
 Initial release of the extension.
+
+### 0.0.2
+
+Updated grammar matching the 3.0.0 Nuget version.
