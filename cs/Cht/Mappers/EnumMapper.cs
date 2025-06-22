@@ -12,30 +12,30 @@ public class EnumMapper(IEnumerable<Type> enumTypes, EnumMappingStyle style) : I
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
         output = default;
-        var type = Unify(targetType, (node as ChtNonterminal)?.Type);
+        var type = Unify(targetType, node.IsRawWithChildren ? node.Raw : null);
         if (type is null) return false;
-        if (node is ChtNonterminal nonterminal)
+        if (node.IsRawWithChildren)
         {
-            if (nonterminal.Children.Count == 1 && nonterminal.Children[0] is ChtTerminal valueNode)
+            if (node.Children.Count == 1 && node.Children[0] is ChtNode valueNode)
             {
                 if (valueNode.IsJustQuoted && Enum.TryParse(type, valueNode.Quoted.Replace("|", ", "), out output))
                 {
                     return true;
                 }
-                if (valueNode.IsJustRaw && Enum.TryParse(type, string.Join(", ", valueNode.Raw.Split("|").Select(x => char.ToUpper(x[0]) + x[1..])), out output))
+                if (valueNode.IsJustRaw && Enum.TryParse(type, valueNode.Raw.Replace("|", ", "), out output))
                 {
                     return true;
                 }
             }
             throw new ArgumentException("Invalid enum node.");
         }
-        if (node is ChtTerminal terminal)
+        else
         {
-            if (terminal.IsJustQuoted && Enum.TryParse(type, terminal.Quoted.Replace("|", ", "), out output))
+            if (node.IsJustQuoted && Enum.TryParse(type, node.Quoted.Replace("|", ", "), out output))
             {
                 return true;
             }
-            if (terminal.IsJustRaw && Enum.TryParse(type, string.Join(", ", terminal.Raw.Split("|").Select(x => char.ToUpper(x[0]) + x[1..])), out output))
+            if (node.IsJustRaw && Enum.TryParse(type, node.Raw.Replace("|", ", "), out output))
             {
                 return true;
             }
@@ -59,13 +59,13 @@ public class EnumMapper(IEnumerable<Type> enumTypes, EnumMappingStyle style) : I
             }
             var innerNode = _style switch
             {
-                EnumMappingStyle.UntypedRawName or EnumMappingStyle.TypedRawName => ChtTerminal.JustRaw(string.Join("|", valueName.Split(", ").Select(x => char.ToLower(x[0]) + x[1..]))),
-                EnumMappingStyle.UntypedQuotedName or EnumMappingStyle.TypedQuotedName => ChtTerminal.JustQuoted(valueName.Replace(", ", "|")),
-                EnumMappingStyle.UntypedOrdinal or EnumMappingStyle.TypedOrdinal => ChtTerminal.JustRaw(((int)(object)enumValue).ToString()),
+                EnumMappingStyle.UntypedRawName or EnumMappingStyle.TypedRawName => new ChtNode(valueName.Replace(", ", "|"), null),
+                EnumMappingStyle.UntypedQuotedName or EnumMappingStyle.TypedQuotedName => new ChtNode(null, valueName.Replace(", ", "|")),
+                EnumMappingStyle.UntypedOrdinal or EnumMappingStyle.TypedOrdinal => new ChtNode(((int)(object)enumValue).ToString(), null),
                 _ => throw new ArgumentException("Invalid enum mapping style.")
             };
             output = _style is EnumMappingStyle.UntypedRawName or EnumMappingStyle.UntypedQuotedName or EnumMappingStyle.UntypedOrdinal ? innerNode
-                : new ChtNonterminal(type.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? type.Name, innerNode);
+                : new ChtNode(type.GetCustomAttribute<ChtTypeAttribute>()?.TypeName ?? type.Name, null, [innerNode]);
             return true;
         }
         output = default;
@@ -76,7 +76,7 @@ public class EnumMapper(IEnumerable<Type> enumTypes, EnumMappingStyle style) : I
 public enum EnumMappingStyle
 {
     /// <summary>
-    /// `Enum.Variant = 1` is serialized as `variant`.
+    /// `Enum.Variant = 1` is serialized as `Variant`.
     /// </summary>
     UntypedRawName,
 
@@ -91,7 +91,7 @@ public enum EnumMappingStyle
     UntypedOrdinal,
 
     /// <summary>
-    /// `Enum.Variant = 1` is serialized as `Enum(variant)`.
+    /// `Enum.Variant = 1` is serialized as `Enum(Variant)`.
     /// </summary>
     TypedRawName,
 

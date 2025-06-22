@@ -82,11 +82,8 @@ Block:
 
 ### Semantics
 
-CHT is an abstract format. A representation of a CHT file is up to the communicating parties to choose. What this means, is that there are no data types like arrays, integers or strings in CHT. Instead CHT only describes a tree structure of data.
-There are two kinds of nodes:
-
-1. Terminal node - a leaf node. This node is defined by the values of its raw and quoted parts. Often either purely raw or purely quoted, but both parts may be present.
-2. Nonterminal node - a node which may have children. Such node is entirely defined by its type (capital letter followed by any number of nonspecial characters) and a sequence (potentially empty) of its children.
+CHT is an abstract format. An interpretation of a CHT file is up to the communicating parties to choose. What this means, is that there are no data types like arrays, integers or strings in CHT. Instead CHT only describes a tree structure of data.
+Each node has a value and a list of children.
 
 ### Syntax
 
@@ -104,23 +101,21 @@ Whitespace characters including a space ` `, tab, newline and others, a number s
 
 The rest of the line following `# ` (any whitespace) is ignored.
 
-#### Terminal node
+#### Node
 
-A concatenation of a raw and quoted parts. One of the parts may be missing. The raw part is a piece of text that does not start with a capital letter and does not contain a special character. Colons `:` can be present as long as they have digits on both sides.
+Concatenation of the following:
 
-The quoted part corresponds exactly with a JSON string syntax. That is the node's value is delimited using a pair of `"` and may contain escape sequences using `\`.
+1. One or both of:
+1. 1. Raw value: a pieces of text that does not contain a special character. Colons `:` can be present as long as they have digits on both sides.
+1. 2. Quoted value: corresponds exactly with a JSON string syntax. That is the node's value is delimited using a pair of `"` and may contain escape sequences using `\`.
+1. Zero or more pairs of parens containing zero or more space separated children.
+1. Optionally a `:`followed by one of:
+1. 1. Inline children: one or more whitespace separated children.
+1. 2. Indented children: a newline, and indentation increase, one or more newline separated children an indentation decrease and a newline
 
-An example of purely raw terminal: `$print`, a purely quoted terminal: `"Some text"` and combined terminal: `re"[A-Z]\w*"`.
+An example of purely raw terminal: `$print`, a purely quoted terminal: `"Some text"`, combined terminal: `re"[A-Z]\w*"`, and raw valued node with children: `List(1 2 3)`.
 
-#### Nonterminal node
-
-The nonterminal node always starts with its type. Then, one or both of
-
-1. a pair of parentheses containing zero or more whitespace separated children
-2. - a colon followed by one or more whitespace separated children, or
-   - a colon followed by a newline, and indentation increase, one or more newline separated children an indentation decrease and a newline
-
-Note that a nonterminal with zero children must always use option 1.
+Note that being terminal (`List`) and having 0 children (`List()`) is two different things in CHT (but may mean the same depending on the application).
 
 The following examples all encode the very same tree:
 
@@ -148,10 +143,6 @@ Parent("1st child"):
     "2nd child"
     "3rd child"
 ```
-
-#### Root
-
-The root may be any node as defined above.
 
 ## Implementations
 

@@ -40,10 +40,10 @@ internal static class ChtParser
         var (result, isRestOfLineNode) = ReadInlineNode();
         if (result is null) Throw("Expected node");
 
-        if (result is ChtNonterminal nonterminal && isRestOfLineNode)
+        if (result != null && isRestOfLineNode)
         {
-            nonterminal.Children.AddRange(line.Children.Select(Parse));
-            if (!nonterminal.Children.Any())
+            result.Children!.AddRange(line.Children.Select(Parse));
+            if (!result.Children.Any())
                 Throw("Unexpected empty rest of line nonterminal. \":\" must be followed by at least one child.");
         }
         else if (line.Children.Any()) Throw($"Unexpected indentation on the following line.");
@@ -70,38 +70,6 @@ internal static class ChtParser
             }
 
             var nodeStart = pointer;
-            if (char.IsUpper(line.Content[pointer]))
-            {
-                pointer++;
-                while (!IsSpecial(PeekChar())) pointer++;
-                var type = line.Content[nodeStart..pointer];
-
-                if (PeekChar() == ':')
-                {
-                    pointer++;
-                    return (new ChtNonterminal(type, ReadInlineNodes()), true);
-                }
-
-                if (PeekChar() == '(')
-                {
-                    pointer++;
-                    var resultNonterminal = new ChtNonterminal(type, ReadInlineNodes());
-                    if (PeekChar() == ')')
-                    {
-                        pointer++;
-                        if (PeekChar() == ':')
-                        {
-                            pointer++;
-                            resultNonterminal.Children.AddRange(ReadInlineNodes());
-                            return (resultNonterminal, true);
-                        }
-                        return (resultNonterminal, false);
-                    }
-                    Throw("Expected node or ')'");
-                }
-
-                Throw("Expected ':' or '('.");
-            }
 
             while (
               !IsSpecial(PeekChar()) ||
@@ -110,6 +78,7 @@ internal static class ChtParser
                   char.IsDigit(line.Content[pointer - 1]) &&
                   char.IsDigit(line.Content[pointer + 1]))
             ) pointer++;
+            var raw = pointer > nodeStart ? line.Content[nodeStart..pointer] : null;
             var rawEnd = pointer;
 
             if (PeekChar() == '"')
@@ -127,13 +96,33 @@ internal static class ChtParser
                     pointer++;
                 }
             }
+            var quoted = pointer > rawEnd ? JsonSerializer.Deserialize<string>(line.Content[rawEnd..pointer]) : null;
+            List<ChtNode>? children = null;
 
-            var resultTerminal = new ChtTerminal
+            while (PeekChar() == '(')
             {
-                Raw = rawEnd > nodeStart ? line.Content[nodeStart..rawEnd] : null,
-                Quoted = pointer > rawEnd ? JsonSerializer.Deserialize<string>(line.Content[rawEnd..pointer]) : null
-            };
-            return (resultTerminal.Raw is null && resultTerminal.Quoted is null ? null : resultTerminal, false);
+                pointer++;
+                children ??= [];
+                children.AddRange(ReadInlineNodes());
+                if (PeekChar() == ')')
+                {
+                    pointer++;
+                }
+                else Throw("Expected node or ')'");
+            }
+
+            var isRestOfLine = false;
+            if (PeekChar() == ':')
+            {
+                pointer++;
+                children ??= [];
+                children.AddRange(ReadInlineNodes());
+                isRestOfLine = true;
+            }
+
+            if (raw is null && quoted is null && children is null) return (null, false);
+
+            return (new ChtNode(raw, quoted, children), isRestOfLine);
         }
 
         IEnumerable<ChtNode> ReadInlineNodes()

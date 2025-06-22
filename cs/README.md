@@ -20,9 +20,9 @@ public class SymbolMapper : ChtMapper<Symbol>
 {
     public override bool FromNode(ChtNode node, ChtSerializer serializer, out Symbol output)
     {
-        if (node is ChtTerminal terminal && terminal.IsJustRaw && terminal.Raw.StartsWith("$"))
+        if (node.IsJustRaw && node.Raw.StartsWith("$"))
         {
-            output = new Symbol { Name = terminal.Raw[1..] };
+            output = new Symbol { Name = node.Raw[1..] };
             return true;
         }
         output = default;
@@ -31,7 +31,7 @@ public class SymbolMapper : ChtMapper<Symbol>
 
     public override bool ToNode(Symbol value, ChtSerializer serializer, out ChtNode output)
     {
-        output = new ChtTerminal { Raw = "$" + value.Name };
+        output = new ChtTerminal("$" + value.Name, null);
         return true;
     }
 }
@@ -40,9 +40,9 @@ public class IntLiteralMapper : ChtMapper<IntLiteral>
 {
     public override bool FromNode(ChtNode node, ChtSerializer serializer, out IntLiteral output)
     {
-        if (node is ChtTerminal terminal && terminal.IsJustRaw)
+        if (node.IsJustRaw)
         {
-            if (int.TryParse(terminal.Raw, out var value))
+            if (int.TryParse(node.Raw, out var value))
             {
                 output = new IntLiteral { Value = value };
                 return true;
@@ -54,7 +54,7 @@ public class IntLiteralMapper : ChtMapper<IntLiteral>
 
     public override bool ToNode(IntLiteral value, ChtSerializer serializer, out ChtNode output)
     {
-        output = new ChtTerminal { Raw = value.ToString() };
+        output = new ChtTerminal(value.ToString(), null);
         return true;
     }
 }
@@ -63,9 +63,9 @@ public class StringLiteralMapper : ChtMapper<StringLiteral>
 {
     public override bool FromNode(ChtNode node, ChtSerializer serializer, out StringLiteral output)
     {
-        if (node is ChtTerminal terminal && terminal.IsJustQuoted)
+        if (node.IsJustQuoted)
         {
-            output = new StringLiteral { Value = terminal.Quoted };
+            output = new StringLiteral { Value = node.Quoted };
             return true;
         }
         output = default;
@@ -74,7 +74,7 @@ public class StringLiteralMapper : ChtMapper<StringLiteral>
 
     public override bool ToNode(StringLiteral value, ChtSerializer serializer, out ChtNode output)
     {
-        output = new ChtTerminal { Quoted = value.ToString() };
+        output = new ChtTerminal(null, value.ToString());
         return true;
     }
 }

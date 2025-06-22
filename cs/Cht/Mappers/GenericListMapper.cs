@@ -8,21 +8,21 @@ public class GenericListMapper : IChtMapper
     {
         output = default;
 
-        if (node is ChtNonterminal nonterminal && nonterminal.Type == "List")
+        if (node.IsRawWithChildren && node.Raw == "List")
         {
             if (targetType.IsGenericType && targetType.GenericTypeArguments.Length == 1)
             {
                 var targetItemType = targetType.GenericTypeArguments[0];
                 targetType = typeof(List<>).MakeGenericType(targetItemType);
                 output = Activator.CreateInstance(targetType);
-                foreach (var item in nonterminal.Children)
+                foreach (var item in node.Children)
                 {
                     ((IList)output!).Add(serializer.FromNode(item, targetItemType));
                 }
             }
             else
             {
-                output = nonterminal.Children.Select(serializer.FromNode<object>).ToList();
+                output = node.Children.Select(serializer.FromNode<object>).ToList();
             }
 
             return output is not null && output.GetType().IsAssignableTo(targetType);
@@ -36,7 +36,7 @@ public class GenericListMapper : IChtMapper
             var type = value.GetType();
             if (type.IsGenericType && type.GetGenericTypeDefinition() == listType)
             {
-                output = new ChtNonterminal("List", list.Cast<object>().Select(serializer.ToNode));
+                output = new ChtNode("List", null, list.Cast<object>().Select(serializer.ToNode));
                 return true;
             }
         }

@@ -7,11 +7,11 @@ public class ColorMapper : ChtMapper<Color>
     public override bool FromNode(ChtNode node, ChtSerializer serializer, out Color output)
     {
         output = default;
-        if (node is ChtTerminal terminal && terminal.IsJustRaw && terminal.Raw.StartsWith("#"))
+        if (node.IsJustRaw && node.Raw.StartsWith("#"))
         {
             try
             {
-                output = ColorTranslator.FromHtml(terminal.Raw);
+                output = ColorTranslator.FromHtml(node.Raw);
                 return true;
             }
             catch
@@ -24,7 +24,7 @@ public class ColorMapper : ChtMapper<Color>
 
     public override bool ToNode(Color value, ChtSerializer serializer, out ChtNode output)
     {
-        output = ChtTerminal.JustRaw($"#{value.R:X2}{value.G:X2}{value.B:X2}");
+        output = new ChtNode($"#{value.R:X2}{value.G:X2}{value.B:X2}", null);
         return true;
     }
 }

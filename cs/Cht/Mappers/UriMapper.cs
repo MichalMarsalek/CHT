@@ -8,15 +8,15 @@ public class UriMapper(string? type = "Uri") : IChtMapper
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
         output = default;
-        var isUri = targetType == typeof(Uri) || (_type is not null && (node as ChtNonterminal)?.Type == _type) && typeof(Uri).IsAssignableTo(targetType);
+        var isUri = targetType == typeof(Uri) || (_type is not null && node.IsRawWithChildren && node.Raw == _type) && typeof(Uri).IsAssignableTo(targetType);
         if (!isUri) return false;
 
-        if (node is ChtTerminal terminal && terminal.IsJustQuoted)
+        if (node.IsJustQuoted)
         {
-            output = new Uri(terminal.Quoted);
+            output = new Uri(node.Quoted);
             return true;
         }
-        if (node is ChtNonterminal nonterminal && nonterminal.Children.Count == 1 && nonterminal.Children[0] is ChtTerminal valueNode && valueNode.IsJustQuoted)
+        if (node.IsRawWithChildren && node.Children.Count == 1 && node.Children[0] is ChtNode valueNode && valueNode.IsJustQuoted)
         {
             output = new Uri(valueNode.Quoted);
             return true;
@@ -29,7 +29,7 @@ public class UriMapper(string? type = "Uri") : IChtMapper
     {
         output = default;
         if (value is not Uri uri) return false;
-        output = _type is null ? ChtTerminal.JustQuoted(value.ToString()) : new ChtNonterminal(_type, ChtTerminal.JustQuoted(value.ToString()));
+        output = _type is null ? new ChtNode(null, uri.ToString()) : new ChtNode(_type, null, [new ChtNode(null, uri.ToString())]);
         return true;
     }
 }

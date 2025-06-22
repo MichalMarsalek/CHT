@@ -7,11 +7,11 @@ public class GenericDictionaryMapper : IChtMapper
     public bool FromNode(ChtNode node, Type targetType, ChtSerializer serializer, out object? output)
     {
         output = default;
-        if (node is ChtNonterminal nonterminal && nonterminal.Type == "Dictionary")
+        if (node.IsRawWithChildren && node.Raw == "Dictionary")
         {
-            if (nonterminal.Children.All(x => x is ChtNonterminal pair && pair.Children.Count == 2))
+            if (node.Children.All(pair => pair.IsRawWithChildren && pair.Children.Count == 2))
             {
-                var children = nonterminal.Children.Cast<ChtNonterminal>();
+                var children = node.Children.Cast<ChtNode>();
                 if (targetType.IsGenericType && targetType.GenericTypeArguments.Length == 2)
                 {
                     var keyType = targetType.GetGenericArguments()[0];
@@ -20,7 +20,7 @@ public class GenericDictionaryMapper : IChtMapper
                     output = Activator.CreateInstance(targetType);
                     foreach (var pair in children)
                     {
-                        var key = serializer.FromNode(pair.Children[0], keyType);
+                        var key = serializer.FromNode(pair.Children![0], keyType);
                         var value = serializer.FromNode(pair.Children[1], valueType);
                         ((IDictionary)output!).Add(key, value);
                     }
@@ -28,8 +28,8 @@ public class GenericDictionaryMapper : IChtMapper
                 else
                 {
                     output = children.ToDictionary(
-                        pair => serializer.FromNode<object>(pair.Children[0]),
-                        pair => serializer.FromNode<object>(pair.Children[1])
+                        pair => serializer.FromNode<object>(pair.Children![0]),
+                        pair => serializer.FromNode<object>(pair.Children![1])
                     );
                 }
                 return output is not null && output.GetType().IsAssignableTo(targetType);
@@ -46,11 +46,12 @@ public class GenericDictionaryMapper : IChtMapper
             var type = dictionary.GetType();
             if (type.IsGenericType && type.GetGenericTypeDefinition() == dictionaryType)
             {
-                output = new ChtNonterminal(
-                    "Dictionary",
-                    dictionary.Keys.Cast<object>().Select(key => new ChtNonterminal(
+                output = new ChtNode(
+                    "Dictionary",null,
+                    dictionary.Keys.Cast<object>().Select(key => new ChtNode(
                         "KeyValue",
-                        serializer.ToNode(key), serializer.ToNode(dictionary[key])
+                        null,
+                        [serializer.ToNode(key), serializer.ToNode(dictionary[key])]
                     ))
                 );
                 return true;

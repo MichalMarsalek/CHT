@@ -2,10 +2,19 @@
   "name": "cht",
   "scopeName": "source.cht",
   "patterns": [
+    {
+      "begin": "(\"(?:\\\\.|[^\"])*\"|(?<![\\w:])\\d+:\\d+(?![\\w:])|[^\\s\"():#]+)\\s*(?=[:(])",
+      "beginCaptures": {
+        "1": { "name": "entity.name.function.cht" }
+      },
+      "end": "(?=[:(])",
+      "patterns": []
+    },
     { "include": "#comment" },
-    { "include": "#nonterminal" },
     { "include": "#quoted" },
-    { "include": "#raw" }
+    { "include": "#raw" },
+    { "include": "#parens" },
+    { "include": "#colon" }
   ],
   "repository": {
     "comment": {
@@ -23,7 +32,10 @@
           "begin": "\"",
           "end": "\"",
           "patterns": [
-            { "name": "constant.character.escape.cht", "match": "\\\\." }
+            {
+              "name": "constant.character.escape.cht",
+              "match": "\\\\."
+            }
           ]
         }
       ]
@@ -31,20 +43,29 @@
     "raw": {
       "patterns": [
         {
-          "name": "string.quoted.single.cht",
-          "match": "(?:\\d+:\\d+|[^\\s\"():A-Z][^\\s\"():]*)"
+          "name": "string.unquoted.raw.cht",
+          "match": "(?<![\\w:])\\d+:\\d+(?![\\w:])|[^\\s\"():]+"
         }
       ]
     },
-    "nonterminal": {
+    "parens": {
       "patterns": [
         {
-          "name": "entity.name.type.nonterminal.cht",
-          "match": "\\b[A-Z][^\\s#():\"]*\\b"
+          "name": "punctuation.group.parens.begin.cht",
+          "match": "\\("
         },
-        { "name": "punctuation.group.parens.begin.cht", "match": "\\(" },
-        { "name": "punctuation.group.parens.end.cht", "match": "\\)" },
-        { "name": "punctuation.separator.children-colon.cht", "match": ":" }
+        {
+          "name": "punctuation.group.parens.end.cht",
+          "match": "\\)"
+        }
+      ]
+    },
+    "colon": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.children-colon.cht",
+          "match": ":"
+        }
       ]
     }
   }

@@ -5,9 +5,9 @@ public class StringMapper : ChtMapper<string>
     public override bool FromNode(ChtNode node, ChtSerializer serializer, out string output)
     {
         output = default;
-        if (node is ChtTerminal terminal && terminal.IsJustQuoted)
+        if (node.IsJustQuoted)
         {
-            output = terminal.Quoted;
+            output = node.Quoted;
             return true;
         }
         return false;
@@ -15,7 +15,7 @@ public class StringMapper : ChtMapper<string>
 
     public override bool ToNode(string value, ChtSerializer serializer, out ChtNode output)
     {
-        output = ChtTerminal.JustQuoted(value);
+        output = new ChtNode(null, value);
         return true;
     }
 }
