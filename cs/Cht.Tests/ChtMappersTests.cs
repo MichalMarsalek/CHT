@@ -22,11 +22,11 @@ public class ChtMappersTests
 
         var nodes = Raw(
             "Binary",
-			Raw("Nullary", Quoted("Left")),
-			Raw(
+            Raw("Nullary", Quoted("Left")),
+            Raw(
                 "Binary",
-				Raw("Nullary", Quoted("RightLeft")),
-				Raw("Nullary", Quoted("RightRight"), Quoted("A"), Quoted("C"), Quoted("B"))
+                Raw("Nullary", Quoted("RightLeft")),
+                Raw("Nullary", Quoted("RightRight"), Quoted("A"), Quoted("C"), Quoted("B"))
             )
         );
 
@@ -66,6 +66,18 @@ public class ChtMappersTests
         await Assert.That(serializer.FromNode<TestBaseObject>(node2)).IsEquivalentTo(data2);
         await Assert.That(serializer.FromNode<TestGenericObject<string>>(node2)).IsEquivalentTo(data2);
         await Assert.That(serializer.FromNode<TestInheritedObject>(node2)).IsEquivalentTo(data2);
+    }
+
+    [Test]
+    public async Task ObjectMapper_WithListAndInheritance_DefinesInverseFunctions()
+    {
+        var data = new TestListOfBaseObjects { Items = [new TestDerivedObject()] };
+        var node = Raw("TestListOfBaseObjects", Raw("TestDerivedObject", []));
+
+        var serializer = new ChtSerializer().AddObjectMapper([typeof(TestBaseObject), typeof(TestDerivedObject), typeof(TestListOfBaseObjects)]);
+
+        await Assert.That(serializer.ToNode(data)).IsEquivalentTo(node);
+        await Assert.That(serializer.FromNode<object>(node)).IsEquivalentTo(data);
     }
 
     [Test]
@@ -131,7 +143,7 @@ public class ChtMappersTests
         var serializer = new ChtSerializer().AddIntMapper().AddGenericListMapper();
         await Mapper_DefinesInverseFunctions(serializer, new List<int> { 2, 4 }, Raw(
             "List",
-			Raw("2"), Raw("4")
+            Raw("2"), Raw("4")
         ));
     }
 
@@ -256,12 +268,12 @@ public class ChtMappersTests
         await Assert.That(serializer.FromNode(node, targetType ?? typeof(object))).IsEquivalentTo(value);
     }
 
-	private static ChtNode Raw(string? raw) => new ChtNode(raw, null, null);
-	private static ChtNode Raw(string? raw, params ChtNode[] children) => new ChtNode(raw, null, children);
-	private static ChtNode Quoted(string? quoted) => new ChtNode(null, quoted, null);
-	private static ChtNode Quoted(string? quoted, params ChtNode[] children) => new ChtNode(null, quoted, children);
+    private static ChtNode Raw(string? raw) => new ChtNode(raw, null, null);
+    private static ChtNode Raw(string? raw, params ChtNode[] children) => new ChtNode(raw, null, children);
+    private static ChtNode Quoted(string? quoted) => new ChtNode(null, quoted, null);
+    private static ChtNode Quoted(string? quoted, params ChtNode[] children) => new ChtNode(null, quoted, children);
 
-	public abstract class TestNode { }
+    public abstract class TestNode { }
 
     [ChtType("Binary")]
     public class TestBinaryNode : TestNode
@@ -324,5 +336,15 @@ public class ChtMappersTests
         public int Number { get; set; }
         public List<string> Texts { get; set; }
         public List<int> Numbers { get; set; }
+    }
+
+    public class TestDerivedObject : TestBaseObject
+    {
+
+    }
+
+    public class TestListOfBaseObjects
+    {
+        public List<TestBaseObject> Items { get; set; }
     }
 }
