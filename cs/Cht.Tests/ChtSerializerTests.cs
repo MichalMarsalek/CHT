@@ -175,6 +175,17 @@ public class ChtSerializerTests
         await Assert.That(() => serializer.ToNode(node)).Throws<ChtMappingException>().WithMessage("Circular reference detected.");
     }
 
+    [Test]
+    public async Task Deserialize_WithMappingException_ContainsLineNumber()
+    {
+        var serializer = new ChtSerializer().AddMapper(new TestNodeMapper());
+        var source = """
+            TestNode:
+               1
+            """;
+        await Assert.That(() => serializer.Deserialize<TestNode>(source)).Throws<ChtMappingException>().WithMessageMatching("Error on line 1. *");
+    }
+
     private static ChtNode Raw(object? raw) => new ChtNode(raw?.ToString(), null, null);
     private static ChtNode Raw(object? raw, params ChtNode[] children) => new ChtNode(raw?.ToString(), null, children);
     private static ChtNode Quoted(string? quoted) => new ChtNode(null, quoted, null);

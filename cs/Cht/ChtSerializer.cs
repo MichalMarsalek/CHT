@@ -6,6 +6,7 @@ namespace Cht;
 public class ChtSerializer
 {
     private Dictionary<int, object> currentlyMappingObjects = [];
+    private Dictionary<int, int> nodeHashToLineNumber = [];
 
     /// <summary>
     /// This value is appended to the existing line indentation upon each indentation increase.
@@ -122,8 +123,16 @@ public class ChtSerializer
             }
             catch (Exception ex)
             {
+                if (nodeHashToLineNumber.TryGetValue(node.GetHashCode(), out var lineNumber1))
+                {
+                    throw new ChtMappingException(mapper, $"Error on line {lineNumber1}. {ex.Message}", ex);
+                }
                 throw new ChtMappingException(mapper, ex);
             }
+        }
+        if (nodeHashToLineNumber.TryGetValue(node.GetHashCode(), out var lineNumber))
+        {
+            throw new ChtMappingException(null, $"Error on line {lineNumber}. No mapper able to handle node {node}.");
         }
         throw new ChtMappingException(null, $"No mapper able to handle node {node}.");
     }
@@ -144,7 +153,7 @@ public class ChtSerializer
     /// <param name="source">Content of the CHT document to deserialize.</param>
     /// <returns>Tje deserialized value.</returns>
     public T Deserialize<T>(string source)
-        => FromNode<T>(Parse(source));
+        => (T)FromNode(ChtParser.Parse(source, out nodeHashToLineNumber), typeof(T))!;
 
     /// <summary>
     /// Parse a CHT document.
