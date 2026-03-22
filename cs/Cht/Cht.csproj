@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>CompactHeterogeneousTree</PackageId>
-    <VersionPrefix>4.0.1</VersionPrefix>
+    <VersionPrefix>4.0.2</VersionPrefix>
     <Title>CompactHeterogeneousTree</Title>
     <Authors>MichalMarsalek</Authors>
     <Product>CompactHeterogeneousTree</Product>

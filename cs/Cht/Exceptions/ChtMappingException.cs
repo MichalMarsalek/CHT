@@ -11,8 +11,8 @@ public class ChtMappingException : ChtException
 
     public ChtNode? Node { get; set; }
 
-    public ChtMappingException(Exception innerException, IChtMapper? mapper = null, ChtNode? node = null)
-        : base(innerException.Message, innerException)
+    public ChtMappingException(string message, Exception? innerException, IChtMapper? mapper = null, ChtNode? node = null)
+        : base(message, innerException)
     {
         Mapper = mapper;
         Node = node;

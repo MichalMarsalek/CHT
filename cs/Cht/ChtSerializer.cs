@@ -84,7 +84,7 @@ public class ChtSerializer
                 }
                 catch (Exception ex)
                 {
-                    throw new ChtMappingException(ex, mapper);
+                    throw new ChtMappingException(ex.Message, ex, mapper);
                 }
             }
             throw new ChtMappingException($"No mapper able to handle value of type {typeof(T).Name}.");
@@ -129,7 +129,7 @@ public class ChtSerializer
             }
             catch (Exception ex)
             {                
-                throw new ChtMappingException(ex, mapper, node);
+                throw new ChtMappingException(ex.Message, ex, mapper, node);
             }
         }
         throw new ChtMappingException($"No mapper able to handle node {node}.", null, node);
