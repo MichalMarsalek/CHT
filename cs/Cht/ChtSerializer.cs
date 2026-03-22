@@ -6,7 +6,6 @@ namespace Cht;
 public class ChtSerializer
 {
     private Dictionary<int, object> currentlyMappingObjects = [];
-    private Dictionary<int, int> nodeHashToSource = [];
 
     /// <summary>
     /// This value is appended to the existing line indentation upon each indentation increase.
