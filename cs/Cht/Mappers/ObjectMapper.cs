@@ -151,7 +151,7 @@ public class ObjectMapper(IEnumerable<Type> types, bool skipTrailingNulls = true
                 }
             }
             if (childPlaced) continue;
-            throw new ChtMappingException(this, $"Node {child.ToString()} could not be mapped to any unused property of {GetTypeName(type)}.");
+            throw new ChtMappingException($"Node {child.ToString()} could not be mapped to any unused property of {GetTypeName(type)}.");
         }
         return result;
     }
