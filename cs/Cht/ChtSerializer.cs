@@ -6,7 +6,6 @@ namespace Cht;
 public class ChtSerializer
 {
     private Dictionary<int, object> currentlyMappingObjects = [];
-    private Dictionary<int, int> nodeHashToSource = [];
 
     /// <summary>
     /// This value is appended to the existing line indentation upon each indentation increase.
@@ -161,7 +160,7 @@ public class ChtSerializer
         {
             if (ex.Node is not null && nodeHashToSource.TryGetValue(ex.Node.GetHashCode(), out var sourceLocation))
             {
-                throw new ChtSourceException(sourceLocation.LineNumber, sourceLocation.ColumnNumber, "Mapping error at", ex);
+                throw new ChtSourceException(sourceLocation.LineNumber, sourceLocation.ColumnNumber, $"Mapping error at: {ex.Message}", ex);
             }
             throw;
         }

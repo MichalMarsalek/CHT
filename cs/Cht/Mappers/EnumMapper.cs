@@ -54,7 +54,7 @@ public class EnumMapper(IEnumerable<Type> enumTypes, EnumMappingStyle style) : I
         {
             var type = value.GetType();
             var valueName = enumValue.ToString();
-            if (_style is not EnumMappingStyle.UntypedOrdinal or EnumMappingStyle.TypedOrdinal && int.TryParse(valueName, out var _)) {
+            if (_style is not (EnumMappingStyle.UntypedOrdinal or EnumMappingStyle.TypedOrdinal) && int.TryParse(valueName, out var _)) {
                 throw new ChtMappingException($"Enum value could not be serialized to {_style}. For flag enums, make sure the enum has the [Flags] attribute. For serializing unnamed enum values, use EnumMappingStyle.TypedOrdinal or EnumMappingStyle.UntypedOrdinal.", this);
             }
             var innerNode = _style switch

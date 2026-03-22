@@ -184,7 +184,7 @@ public class ChtSerializerTests
                List: ???
             """;
         await Assert.That(() => serializer.Deserialize<object>(source)).Throws<ChtSourceException>()
-            .WithMessage("Mapping error at Line: 2, Col: 10");
+            .WithMessage("Mapping error at: No mapper able to handle node ???. Line: 2, Col: 10");
     }
 
     private static ChtNode Raw(object? raw) => new ChtNode(raw?.ToString(), null, null);
