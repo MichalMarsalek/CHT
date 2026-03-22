@@ -5,7 +5,10 @@ namespace Cht;
 internal static class ChtParser
 {
     public static ChtNode Parse(string source)
-        => Parse(NestLines(GetLines(source)));
+        => Parse(source, out _);
+
+    public static ChtNode Parse(string source, out Dictionary<ChtNode, int> nodeToLineNumber)
+        => Parse(NestLines(GetLines(source)), nodeToLineNumber = []);
 
     private static IEnumerable<Line> GetLines(string source)
     {
@@ -34,7 +37,7 @@ internal static class ChtParser
         return lines;
     }
 
-    private static ChtNode Parse(Line line)
+    private static ChtNode Parse(Line line, Dictionary<ChtNode, int> nodeToLineNumber)
     {
         var pointer = 0;
         var (result, isRestOfLineNode) = ReadInlineNode();
@@ -42,14 +45,14 @@ internal static class ChtParser
 
         if (result != null && isRestOfLineNode)
         {
-            result.Children!.AddRange(line.Children.Select(Parse));
+            result.Children!.AddRange(line.Children.Select(x => Parse(x, nodeToLineNumber)));
             if (!result.Children.Any())
                 Throw("Unexpected empty rest of line nonterminal. \":\" must be followed by at least one child.");
         }
         else if (line.Children.Any()) Throw($"Unexpected indentation on the following line.");
 
         if (PeekChar() != '\n') Throw("Expected end of line.");
-        return result!;
+        return Store(result!);
 
         char PeekChar() => line.Content[pointer];
 
@@ -122,7 +125,13 @@ internal static class ChtParser
 
             if (raw is null && quoted is null && children is null) return (null, false);
 
-            return (new ChtNode(raw, quoted, children), isRestOfLine);
+            return (Store(new ChtNode(raw, quoted, children)), isRestOfLine);
+        }
+
+        ChtNode Store(ChtNode x)
+        {
+            nodeToLineNumber[x] = line.LineIndex + 1;
+            return x;
         }
 
         IEnumerable<ChtNode> ReadInlineNodes()

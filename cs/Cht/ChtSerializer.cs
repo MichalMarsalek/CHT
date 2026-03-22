@@ -1,4 +1,5 @@
 ﻿using Cht.Mappers;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Cht;
@@ -109,7 +110,7 @@ public class ChtSerializer
     /// <param name="node">Node to map.</param>
     /// <param name="type">The required type of the output. May be object when there is no constraint.</param>
     /// <returns>The resulting mapped value.</returns>
-    public object? FromNode(ChtNode node, Type type)
+    public object? FromNode(ChtNode node, Type type, Dictionary<ChtNode, int>? nodeToLineNumber = null)
     {
         foreach (var mapper in Mappers.Reverse())
         {
@@ -122,8 +123,16 @@ public class ChtSerializer
             }
             catch (Exception ex)
             {
+                if (nodeToLineNumber != null && nodeToLineNumber.TryGetValue(node, out var lineNumber1))
+                {
+                    throw new ChtMappingException(mapper, $"Error on line {lineNumber1}.", ex);
+                }
                 throw new ChtMappingException(mapper, ex);
             }
+        }
+        if (nodeToLineNumber != null && nodeToLineNumber.TryGetValue(node, out var lineNumber))
+        {
+            throw new ChtMappingException(null, $"Error on line {lineNumber}. No mapper able to handle node {node}.");
         }
         throw new ChtMappingException(null, $"No mapper able to handle node {node}.");
     }
@@ -144,7 +153,7 @@ public class ChtSerializer
     /// <param name="source">Content of the CHT document to deserialize.</param>
     /// <returns>Tje deserialized value.</returns>
     public T Deserialize<T>(string source)
-        => FromNode<T>(Parse(source));
+        => (T)FromNode(ChtParser.Parse(source, out var nodeToLineNumber), typeof(T), nodeToLineNumber)!;
 
     /// <summary>
     /// Parse a CHT document.
