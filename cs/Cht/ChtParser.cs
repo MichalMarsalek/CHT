@@ -7,8 +7,8 @@ internal static class ChtParser
     public static ChtNode Parse(string source)
         => Parse(source, out _);
 
-    public static ChtNode Parse(string source, out Dictionary<int, int> nodeHashToLineNumber)
-        => Parse(NestLines(GetLines(source)), nodeHashToLineNumber = []);
+    public static ChtNode Parse(string source, out Dictionary<int, (int LineNumber, int ColumnNumber)> nodeHashToSource)
+        => Parse(NestLines(GetLines(source)), nodeHashToSource = []);
 
     private static IEnumerable<Line> GetLines(string source)
     {
@@ -26,18 +26,18 @@ internal static class ChtParser
 
         if (!lines.Any())
         {
-            throw new ChtParsingException(1, 1, "Empty source.");
+            throw new ChtSourceException(1, 1, "Empty source.");
         }
 
         if (lines.First().Indentation != "")
         {
-            throw new ChtParsingException(1, 1, "First line must not be indented.");
+            throw new ChtSourceException(1, 1, "First line must not be indented.");
         }
 
         return lines;
     }
 
-    private static ChtNode Parse(Line line, Dictionary<int, int> nodeHashToLineNumber)
+    private static ChtNode Parse(Line line, Dictionary<int, (int, int)> nodeHashToSource)
     {
         var pointer = 0;
         var (result, isRestOfLineNode) = ReadInlineNode();
@@ -45,7 +45,7 @@ internal static class ChtParser
 
         if (result != null && isRestOfLineNode)
         {
-            result.Children!.AddRange(line.Children.Select(x => Parse(x, nodeHashToLineNumber)));
+            result.Children!.AddRange(line.Children.Select(x => Parse(x, nodeHashToSource)));
             if (!result.Children.Any())
                 Throw("Unexpected empty rest of line nonterminal. \":\" must be followed by at least one child.");
         }
@@ -60,7 +60,7 @@ internal static class ChtParser
             => char.IsWhiteSpace(c) || c == ':' || c == '(' || c == ')' || c == '"';
 
         void Throw(string message)
-            => throw new ChtParsingException(line.LineIndex + 1, line.Indentation.Length + pointer + 1, message);
+            => throw new ChtSourceException(line.LineIndex + 1, line.Indentation.Length + pointer + 1, message);
 
         (ChtNode?, bool) ReadInlineNode()
         {
@@ -125,12 +125,12 @@ internal static class ChtParser
 
             if (raw is null && quoted is null && children is null) return (null, false);
 
-            return (Store(new ChtNode(raw, quoted, children)), isRestOfLine);
+            return (Store(new ChtNode(raw, quoted, children), nodeStart), isRestOfLine);
         }
 
-        ChtNode Store(ChtNode x)
+        ChtNode Store(ChtNode x, int nodeStart)
         {
-            nodeHashToLineNumber[x.GetHashCode()] = line.LineIndex + 1;
+            nodeHashToSource[x.GetHashCode()] = (line.LineIndex + 1, line.Indentation.Length + nodeStart + 1);
             return x;
         }
 
@@ -162,7 +162,7 @@ internal static class ChtParser
             {
                 if (last.Parent is null)
                 {
-                    throw new ChtParsingException(line.LineIndex + 1, 1, $"There may only be a single root node.");
+                    throw new ChtSourceException(line.LineIndex + 1, 1, $"There may only be a single root node.");
                 }
                 line.Parent = last.Parent;
                 last.Parent.Children.Add(line);
@@ -177,7 +177,7 @@ internal static class ChtParser
             }
             else
             {
-                throw new ChtParsingException(line.LineIndex + 1, 1, $"Invalid indentation.");
+                throw new ChtSourceException(line.LineIndex + 1, 1, $"Invalid indentation.");
             }
         }
 

@@ -3,7 +3,7 @@
 /// <summary>
 /// Exception signaling an error while parsing a CHT document.
 /// </summary>
-public class ChtParsingException : ChtException
+public class ChtSourceException : ChtException
 {
     /// <summary>
     /// 1-based number of the line the error occurred on.
@@ -15,7 +15,7 @@ public class ChtParsingException : ChtException
     /// </summary>
     public int ColumnNumber { get; set; }
 
-    public ChtParsingException(int lineNumber, int columnNumber, string message, Exception? innerException = null)
+    public ChtSourceException(int lineNumber, int columnNumber, string message, Exception? innerException = null)
         : base($"{message} Line: {lineNumber}, Col: {columnNumber}", innerException)
     {
         LineNumber = lineNumber;

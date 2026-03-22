@@ -6,7 +6,6 @@ namespace Cht;
 public class ChtSerializer
 {
     private Dictionary<int, object> currentlyMappingObjects = [];
-    private Dictionary<int, int> nodeHashToLineNumber = [];
 
     /// <summary>
     /// This value is appended to the existing line indentation upon each indentation increase.
@@ -67,7 +66,7 @@ public class ChtSerializer
             hashCode = value.GetHashCode();
             if (currentlyMappingObjects.TryGetValue(hashCode, out var obj) && Object.ReferenceEquals(obj, value))
             {
-                throw new ChtMappingException(null, "Circular reference detected.");
+                throw new ChtMappingException("Circular reference detected.");
             }
             currentlyMappingObjects[hashCode] = value;
         }
@@ -84,10 +83,10 @@ public class ChtSerializer
                 }
                 catch (Exception ex)
                 {
-                    throw new ChtMappingException(mapper, ex);
+                    throw new ChtMappingException(ex.Message, ex, mapper);
                 }
             }
-            throw new ChtMappingException(null, $"No mapper able to handle value of type {typeof(T).Name}.");
+            throw new ChtMappingException($"No mapper able to handle value of type {typeof(T).Name}.");
         }
         finally
         {
@@ -121,20 +120,18 @@ public class ChtSerializer
                     return output;
                 }
             }
-            catch (Exception ex)
+            catch (ChtMappingException mappingEx)
             {
-                if (nodeHashToLineNumber.TryGetValue(node.GetHashCode(), out var lineNumber1))
-                {
-                    throw new ChtMappingException(mapper, $"Error on line {lineNumber1}. {ex.Message}", ex);
-                }
-                throw new ChtMappingException(mapper, ex);
+                mappingEx.Mapper ??= mapper;
+                mappingEx.Node ??= node;
+                throw;
+            }
+            catch (Exception ex)
+            {                
+                throw new ChtMappingException(ex.Message, ex, mapper, node);
             }
         }
-        if (nodeHashToLineNumber.TryGetValue(node.GetHashCode(), out var lineNumber))
-        {
-            throw new ChtMappingException(null, $"Error on line {lineNumber}. No mapper able to handle node {node}.");
-        }
-        throw new ChtMappingException(null, $"No mapper able to handle node {node}.");
+        throw new ChtMappingException($"No mapper able to handle node {node}.", null, node);
     }
 
     /// <summary>
@@ -153,7 +150,21 @@ public class ChtSerializer
     /// <param name="source">Content of the CHT document to deserialize.</param>
     /// <returns>Tje deserialized value.</returns>
     public T Deserialize<T>(string source)
-        => (T)FromNode(ChtParser.Parse(source, out nodeHashToLineNumber), typeof(T))!;
+    {
+        var node = ChtParser.Parse(source, out var nodeHashToSource);
+        try
+        {
+            return (T)FromNode(node, typeof(T))!;
+        }
+        catch (ChtMappingException ex)
+        {
+            if (ex.Node is not null && nodeHashToSource.TryGetValue(ex.Node.GetHashCode(), out var sourceLocation))
+            {
+                throw new ChtSourceException(sourceLocation.LineNumber, sourceLocation.ColumnNumber, "Mapping error at", ex);
+            }
+            throw;
+        }
+    }
 
     /// <summary>
     /// Parse a CHT document.

@@ -114,6 +114,7 @@ public class ObjectMapper(IEnumerable<Type> types, bool skipTrailingNulls = true
                 };
             }).ToList();
         var result = Activator.CreateInstance(type);
+        List<ChtMappingException> innerExceptions = [];
         foreach (var child in node.Children)
         {
             var childPlaced = false;
@@ -130,7 +131,9 @@ public class ObjectMapper(IEnumerable<Type> types, bool skipTrailingNulls = true
                         childPlaced = true;
                         break;
                     }
-                    catch (ChtMappingException) { }
+                    catch (ChtMappingException mappingEx) {
+                        innerExceptions.Add(mappingEx);
+                    }
                 }
 
                 if (prop.AcceptsSubvalue)
@@ -147,11 +150,15 @@ public class ObjectMapper(IEnumerable<Type> types, bool skipTrailingNulls = true
                         childPlaced = true;
                         break;
                     }
-                    catch (ChtMappingException) { }
+                    catch (ChtMappingException mappingEx)
+                    {
+                        innerExceptions.Add(mappingEx);
+                    }
                 }
             }
             if (childPlaced) continue;
-            throw new ChtMappingException(this, $"Node {child.ToString()} could not be mapped to any unused property of {GetTypeName(type)}.");
+            Exception? innerException = innerExceptions.Count == 0 ? null : innerExceptions.Count == 1 ? innerExceptions[0] : new AggregateException(innerExceptions);
+            throw new ChtMappingException($"Node {child.ToString()} could not be mapped to any unused property of {GetTypeName(type)}.", innerException);
         }
         return result;
     }

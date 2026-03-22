@@ -122,15 +122,15 @@ public class ChtSerializerTests
 
     [Test]
     [MethodDataSource(nameof(Parse_WhenInvalidSource_Throws_Data))]
-    public async Task Parse_WhenInvalidSource_Throws(string source, ChtParsingException expectedException)
+    public async Task Parse_WhenInvalidSource_Throws(string source, ChtSourceException expectedException)
     {
         var serializer = new ChtSerializer();
-        ChtParsingException? actualException = null;
+        ChtSourceException? actualException = null;
         try
         {
             serializer.Parse(source);
         }
-        catch (ChtParsingException ex)
+        catch (ChtSourceException ex)
         {
             actualException = ex;
         }
@@ -159,11 +159,11 @@ public class ChtSerializerTests
         () => ("A(0)(1):\n 2\n 3", Raw("A", Raw(0), Raw(1), Raw(2), Raw(3))),
     ];
 
-    public static IEnumerable<Func<(string, ChtParsingException)>> Parse_WhenInvalidSource_Throws_Data() => [
-        () => (" 58", new ChtParsingException(1, 1, "")),
-        () => ("A:", new ChtParsingException(1, 3, "")),
-        () => ("A()\n  B()", new ChtParsingException(1, 4, "")),
-        () => ("A:\n    B:\n  C()", new ChtParsingException(2, 7, "")),
+    public static IEnumerable<Func<(string, ChtSourceException)>> Parse_WhenInvalidSource_Throws_Data() => [
+        () => (" 58", new ChtSourceException(1, 1, "")),
+        () => ("A:", new ChtSourceException(1, 3, "")),
+        () => ("A()\n  B()", new ChtSourceException(1, 4, "")),
+        () => ("A:\n    B:\n  C()", new ChtSourceException(2, 7, "")),
     ];
 
     [Test]
@@ -176,14 +176,15 @@ public class ChtSerializerTests
     }
 
     [Test]
-    public async Task Deserialize_WithMappingException_ContainsLineNumber()
+    public async Task Deserialize_WithMappingException_ContainsSourceLocation()
     {
-        var serializer = new ChtSerializer().AddMapper(new TestNodeMapper());
+        var serializer = new ChtSerializer().AddGenericListMapper();
         var source = """
-            TestNode:
-               1
+            List:
+               List: ???
             """;
-        await Assert.That(() => serializer.Deserialize<TestNode>(source)).Throws<ChtMappingException>().WithMessageMatching("Error on line 1. *");
+        await Assert.That(() => serializer.Deserialize<object>(source)).Throws<ChtSourceException>()
+            .WithMessage("Mapping error at Line: 2, Col: 10");
     }
 
     private static ChtNode Raw(object? raw) => new ChtNode(raw?.ToString(), null, null);
