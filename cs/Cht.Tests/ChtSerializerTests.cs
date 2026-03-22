@@ -183,7 +183,7 @@ public class ChtSerializerTests
             TestNode:
                1
             """;
-        await Assert.That(() => serializer.Deserialize<TestNode>(source)).Throws<ChtMappingException>().WithMessage("Error on line 1.");
+        await Assert.That(() => serializer.Deserialize<TestNode>(source)).Throws<ChtMappingException>().WithMessageMatching("Error on line 1. *");
     }
 
     private static ChtNode Raw(object? raw) => new ChtNode(raw?.ToString(), null, null);

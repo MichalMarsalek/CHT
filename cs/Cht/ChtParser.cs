@@ -7,8 +7,8 @@ internal static class ChtParser
     public static ChtNode Parse(string source)
         => Parse(source, out _);
 
-    public static ChtNode Parse(string source, out Dictionary<ChtNode, int> nodeToLineNumber)
-        => Parse(NestLines(GetLines(source)), nodeToLineNumber = []);
+    public static ChtNode Parse(string source, out Dictionary<int, int> nodeHashToLineNumber)
+        => Parse(NestLines(GetLines(source)), nodeHashToLineNumber = []);
 
     private static IEnumerable<Line> GetLines(string source)
     {
@@ -37,7 +37,7 @@ internal static class ChtParser
         return lines;
     }
 
-    private static ChtNode Parse(Line line, Dictionary<ChtNode, int> nodeToLineNumber)
+    private static ChtNode Parse(Line line, Dictionary<int, int> nodeHashToLineNumber)
     {
         var pointer = 0;
         var (result, isRestOfLineNode) = ReadInlineNode();
@@ -45,14 +45,14 @@ internal static class ChtParser
 
         if (result != null && isRestOfLineNode)
         {
-            result.Children!.AddRange(line.Children.Select(x => Parse(x, nodeToLineNumber)));
+            result.Children!.AddRange(line.Children.Select(x => Parse(x, nodeHashToLineNumber)));
             if (!result.Children.Any())
                 Throw("Unexpected empty rest of line nonterminal. \":\" must be followed by at least one child.");
         }
         else if (line.Children.Any()) Throw($"Unexpected indentation on the following line.");
 
         if (PeekChar() != '\n') Throw("Expected end of line.");
-        return Store(result!);
+        return result!;
 
         char PeekChar() => line.Content[pointer];
 
@@ -130,7 +130,7 @@ internal static class ChtParser
 
         ChtNode Store(ChtNode x)
         {
-            nodeToLineNumber[x] = line.LineIndex + 1;
+            nodeHashToLineNumber[x.GetHashCode()] = line.LineIndex + 1;
             return x;
         }
 

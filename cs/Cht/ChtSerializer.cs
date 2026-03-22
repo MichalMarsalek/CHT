@@ -1,5 +1,4 @@
 ﻿using Cht.Mappers;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Cht;
@@ -7,6 +6,7 @@ namespace Cht;
 public class ChtSerializer
 {
     private Dictionary<int, object> currentlyMappingObjects = [];
+    private Dictionary<int, int> nodeHashToLineNumber = [];
 
     /// <summary>
     /// This value is appended to the existing line indentation upon each indentation increase.
@@ -110,7 +110,7 @@ public class ChtSerializer
     /// <param name="node">Node to map.</param>
     /// <param name="type">The required type of the output. May be object when there is no constraint.</param>
     /// <returns>The resulting mapped value.</returns>
-    public object? FromNode(ChtNode node, Type type, Dictionary<ChtNode, int>? nodeToLineNumber = null)
+    public object? FromNode(ChtNode node, Type type)
     {
         foreach (var mapper in Mappers.Reverse())
         {
@@ -123,14 +123,14 @@ public class ChtSerializer
             }
             catch (Exception ex)
             {
-                if (nodeToLineNumber != null && nodeToLineNumber.TryGetValue(node, out var lineNumber1))
+                if (nodeHashToLineNumber.TryGetValue(node.GetHashCode(), out var lineNumber1))
                 {
-                    throw new ChtMappingException(mapper, $"Error on line {lineNumber1}.", ex);
+                    throw new ChtMappingException(mapper, $"Error on line {lineNumber1}. {ex.Message}", ex);
                 }
                 throw new ChtMappingException(mapper, ex);
             }
         }
-        if (nodeToLineNumber != null && nodeToLineNumber.TryGetValue(node, out var lineNumber))
+        if (nodeHashToLineNumber.TryGetValue(node.GetHashCode(), out var lineNumber))
         {
             throw new ChtMappingException(null, $"Error on line {lineNumber}. No mapper able to handle node {node}.");
         }
@@ -153,7 +153,7 @@ public class ChtSerializer
     /// <param name="source">Content of the CHT document to deserialize.</param>
     /// <returns>Tje deserialized value.</returns>
     public T Deserialize<T>(string source)
-        => (T)FromNode(ChtParser.Parse(source, out var nodeToLineNumber), typeof(T), nodeToLineNumber)!;
+        => (T)FromNode(ChtParser.Parse(source, out nodeHashToLineNumber), typeof(T))!;
 
     /// <summary>
     /// Parse a CHT document.
