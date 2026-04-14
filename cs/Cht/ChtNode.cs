@@ -66,7 +66,7 @@ public class ChtNode
         if (Quoted is not null)
         {
             result += "\"";
-            result += Quoted.Replace(@"\", @"\\").Replace("\"", "\\\"");
+            result += Quoted.Replace(@"\", @"\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r");
             result += "\"";
         }
         return result;

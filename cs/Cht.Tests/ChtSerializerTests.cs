@@ -57,7 +57,7 @@ public class ChtSerializerTests
             Raw(
                 "Assignment",
                 Raw("$text"),
-                Quoted("Some text with spaces")
+                Quoted("Some text with spaces\nNext line")
             )
         );
 
@@ -74,7 +74,7 @@ public class ChtSerializerTests
                   MethodCall: $x $append 7
                   Assignment: $y Indexing($x 3)
                   FunctionCall: $print $y
-                  Assignment: $text "Some text with spaces"
+                  Assignment: $text "Some text with spaces\nNext line"
                 """),
             () => (new ChtSerializer { UseCombinedNodes = false },"""
                 Block:
@@ -85,7 +85,7 @@ public class ChtSerializerTests
                   MethodCall: $x $append 7
                   Assignment: $y Indexing($x 3)
                   FunctionCall: $print $y
-                  Assignment: $text "Some text with spaces"
+                  Assignment: $text "Some text with spaces\nNext line"
                 """),
             () => (new ChtSerializer { Indentation = "    ", UseRestOfLineNodes = false, MaximumParenthesesDepth = 2 }, """
                 Block:
@@ -95,7 +95,7 @@ public class ChtSerializerTests
                     MethodCall($x $append 7)
                     Assignment($y Indexing($x 3))
                     FunctionCall($print $y)
-                    Assignment($text "Some text with spaces")
+                    Assignment($text "Some text with spaces\nNext line")
                 """),
             () => (new ChtSerializer { Indentation = "    ", UseRestOfLineNodes = false, MaximumParenthesesDepth = 2, UseCombinedNodes = false }, """
                 Block:
@@ -106,9 +106,9 @@ public class ChtSerializerTests
                     MethodCall($x $append 7)
                     Assignment($y Indexing($x 3))
                     FunctionCall($print $y)
-                    Assignment($text "Some text with spaces")
+                    Assignment($text "Some text with spaces\nNext line")
                 """),
-            () => (new ChtSerializer { Indentation = "    ", UseRestOfLineNodes = false, MaximumParenthesesDepth = null }, """Block(Assignment($x List(List(0 1) 58 15)) Assignment($x List(0 58 15)) MethodCall($x $append 7) Assignment($y Indexing($x 3)) FunctionCall($print $y) Assignment($text "Some text with spaces"))""")
+            () => (new ChtSerializer { Indentation = "    ", UseRestOfLineNodes = false, MaximumParenthesesDepth = null }, """Block(Assignment($x List(List(0 1) 58 15)) Assignment($x List(0 58 15)) MethodCall($x $append 7) Assignment($y Indexing($x 3)) FunctionCall($print $y) Assignment($text "Some text with spaces\nNext line"))""")
         ];
 
     [Test]
